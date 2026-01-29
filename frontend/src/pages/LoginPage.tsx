@@ -8,7 +8,7 @@ import { useAuth } from "../context/AuthContext";
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user } = useAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,6 +17,7 @@ export default function LoginPage() {
 
   const emailError =
     email && !email.includes("@") ? "Enter a valid email address" : "";
+
   const passwordError =
     password && password.length < 6 ? "Password too short" : "";
 
@@ -34,12 +35,13 @@ export default function LoginPage() {
     try {
       await login(email, password);
 
-      // Redirect based on backend role
-      if (user?.role === "instructor") {
-        navigate("/instructor/overview", { replace: true });
-      } else {
-        navigate("/", { replace: true });
-      }
+      /**
+       * IMPORTANT:
+       * Do NOT rely on `user` synchronously here.
+       * AuthContext will fetch `/me` and re-render AppRoutes.
+       * AppRoutes handles role-based routing.
+       */
+      navigate("/", { replace: true });
     } catch (e: any) {
       setApiError(e.message || "Login failed");
     } finally {
@@ -52,7 +54,7 @@ export default function LoginPage() {
       title="Welcome Back to Excellence."
       description="Dive back into your courses and pick up right where you left off."
     >
-      {/* ROUTE ERRORS */}
+      {/* ROUTE ERRORS (FROM GUARDS) */}
       {routeError && (
         <div
           style={{

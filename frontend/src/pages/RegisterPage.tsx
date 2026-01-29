@@ -3,10 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
 import AuthInput from "../components/auth/AuthInput";
 import PrimaryButton from "../components/ui/PrimaryButton";
-import { apiRequest } from "../api/http";
+import { useAuth } from "../context/AuthContext";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,12 +23,12 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await apiRequest("/register", {
-        method: "POST",
-        body: JSON.stringify({ name, email, password, role }),
-      });
+      await register(name, email, password, role);
 
-      navigate("/login", { replace: true });
+      navigate(
+        role === "instructor" ? "/instructor/overview" : "/",
+        { replace: true }
+      );
     } catch (e: any) {
       setError(e.message || "Registration failed");
     } finally {
@@ -56,11 +57,7 @@ export default function RegisterPage() {
       )}
 
       <AuthInput label="Full Name" value={name} onChange={setName} />
-      <AuthInput
-        label="Email Address"
-        value={email}
-        onChange={setEmail}
-      />
+      <AuthInput label="Email Address" value={email} onChange={setEmail} />
       <AuthInput
         label="Password"
         type="password"

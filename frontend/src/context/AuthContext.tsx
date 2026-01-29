@@ -3,12 +3,13 @@ import {
   useContext,
   useEffect,
   useState,
+  type ReactNode,
 } from "react";
 import { apiRequest } from "../api/http";
 
-type Role = "student" | "instructor" | "admin";
+export type Role = "student" | "instructor" | "admin";
 
-export type User = {
+export type AuthUser = {
   id: number;
   name: string;
   email: string;
@@ -16,32 +17,40 @@ export type User = {
 };
 
 type AuthContextType = {
-  user: User | null;
-  role: Role | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: Role
+  ) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const role = user?.role ?? null;
-  const isAuthenticated = !!user;
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token")
+  );
 
-  // 🔁 restore session on refresh
+  const isAuthenticated = !!token;
+
+  // 🔁 Load user from token on refresh
   useEffect(() => {
-    const token = localStorage.getItem("token");
     if (!token) return;
 
-    apiRequest("/me")
-      .then((u) => setUser(u))
-      .catch(() => {
-        localStorage.removeItem("token");
-        setUser(null);
-      });
-  }, []);
+    apiRequest("/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(setUser)
+      .catch(() => logout());
+  }, [token]);
 
   async function login(email: string, password: string) {
     const res = await apiRequest("/login", {
@@ -50,11 +59,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     localStorage.setItem("token", res.token);
+    setToken(res.token);
+    setUser(res.user);
+  }
+
+  async function register(
+    name: string,
+    email: string,
+    password: string,
+    role: Role
+  ) {
+    const res = await apiRequest("/register", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password, role }),
+    });
+
+    localStorage.setItem("token", res.token);
+    setToken(res.token);
     setUser(res.user);
   }
 
   function logout() {
     localStorage.removeItem("token");
+    setToken(null);
     setUser(null);
   }
 
@@ -62,9 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        role,
         isAuthenticated,
         login,
+        register,
         logout,
       }}
     >
@@ -75,6 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
   return ctx;
 }

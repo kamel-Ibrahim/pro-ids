@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const API_BASE =
+  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 export async function apiRequest(
   path: string,
@@ -6,21 +7,23 @@ export async function apiRequest(
 ) {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
+    ...options,
   });
 
-  const data = await res.json();
-
   if (!res.ok) {
-    throw new Error(data.error || data.message || "API error");
+    let message = "API error";
+    try {
+      const data = await res.json();
+      message = data.message || data.error || message;
+    } catch {}
+    throw new Error(message);
   }
 
-  return data;
+  return res.json();
 }
