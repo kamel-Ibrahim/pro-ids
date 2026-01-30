@@ -17,9 +17,11 @@ export default function MyProgressPage() {
     api
       .get<Progress[]>("/my-progress")
       .then((response) => {
-        setData(Array.isArray(response.data) ? response.data : []);
+        if (Array.isArray(response.data)) {
+          setData(response.data);
+        }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error("Failed to load progress", error);
       })
       .finally(() => {
@@ -28,15 +30,11 @@ export default function MyProgressPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div style={{ padding: 0 }}>
-        <p>Loading...</p>
-      </div>
-    );
+    return <p>Loading...</p>;
   }
 
   return (
-    <div style={{ padding: 0 }}>
+    <>
       {data.map((course) => (
         <div
           key={course.id}
@@ -74,6 +72,6 @@ export default function MyProgressPage() {
           <strong>{course.progress}%</strong>
         </div>
       ))}
-    </div>
+    </>
   );
 }

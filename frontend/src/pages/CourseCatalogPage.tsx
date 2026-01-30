@@ -55,13 +55,25 @@ export default function CourseCatalogPage() {
 
       {/* FILTERS */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-        <select style={{ padding: "10px 14px", borderRadius: 10 }}>
+        <select
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #e5e7eb",
+          }}
+        >
           <option>All Categories</option>
           <option>Development</option>
           <option>Data Science</option>
         </select>
 
-        <select style={{ padding: "10px 14px", borderRadius: 10 }}>
+        <select
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #e5e7eb",
+          }}
+        >
           <option>All Levels</option>
           <option>Beginner</option>
           <option>Intermediate</option>

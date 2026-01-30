@@ -16,13 +16,12 @@ export default function MyLearningPage() {
     api
       .get<CourseProgress[]>("/my-progress")
       .then((response) => {
-        if (Array.isArray(response.data) && response.data.length > 0) {
+        if (Array.isArray(response.data)) {
           setCourses(response.data);
-          localStorage.setItem("my_learning", JSON.stringify(response.data));
         }
       })
-      .catch(() => {
-        // ignore backend errors completely
+      .catch((error: unknown) => {
+        console.error("Failed to load courses", error);
       })
       .finally(() => {
         setLoading(false);
@@ -30,15 +29,11 @@ export default function MyLearningPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div style={{ padding: 0 }}>
-        <p>Loading...</p>
-      </div>
-    );
+    return <p>Loading...</p>;
   }
 
   return (
-    <div style={{ padding: 0 }}>
+    <>
       {courses.map((course) => (
         <div
           key={course.id}
@@ -69,11 +64,15 @@ export default function MyLearningPage() {
             />
           </div>
 
-          <p style={{ marginTop: 8 }}>{course.progress}% completed</p>
+          <p style={{ marginTop: 8 }}>
+            {course.progress}% completed
+          </p>
 
-          <Link to={`/course/${course.id}`}>Continue →</Link>
+          <Link to={`/course/${course.id}`}>
+            Continue →
+          </Link>
         </div>
       ))}
-    </div>
+    </>
   );
 }

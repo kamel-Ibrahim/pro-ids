@@ -16,7 +16,20 @@ export default function CertificateViewPage() {
   );
 
   const cert = certificates.find((c) => c.id === id);
-  if (!cert) return null;
+
+  if (!cert) {
+    return (
+      <div
+        style={{
+          background: "white",
+          padding: 24,
+          borderRadius: 16,
+        }}
+      >
+        Certificate not found.
+      </div>
+    );
+  }
 
   return (
     <div
@@ -37,9 +50,7 @@ export default function CertificateViewPage() {
 
       <h3>{cert.courseTitle}</h3>
 
-      <p style={{ marginTop: 16 }}>
-        Issued on {cert.issuedAt}
-      </p>
+      <p style={{ marginTop: 16 }}>Issued on {cert.issuedAt}</p>
 
       <div style={{ marginTop: 24 }}>
         <button

@@ -1,20 +1,33 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import "./layout.css";
+
+function getTitle(pathname: string) {
+  if (pathname === "/") return "My Learning";
+  if (pathname === "/catalog") return "Course Catalog";
+  if (pathname === "/progress") return "My Progress";
+  if (pathname === "/certificates") return "Certificates";
+
+  // dynamic routes
+  if (pathname.startsWith("/course/")) return "Course";
+  if (pathname.startsWith("/student/certificates/")) return "Certificate";
+
+  return "";
+}
 
 export default function StudentLayout() {
+  const location = useLocation();
+  const title = getTitle(location.pathname);
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
-      {/* LEFT SIDEBAR */}
+    <div className="app-root">
       <Sidebar />
-
-      {/* RIGHT CONTENT */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Topbar title={''}/>
-
-        <main style={{ padding: "32px" }}>
+      <div className="main">
+        <Topbar title={title} />
+        <div className="content">
           <Outlet />
-        </main>
+        </div>
       </div>
     </div>
   );
