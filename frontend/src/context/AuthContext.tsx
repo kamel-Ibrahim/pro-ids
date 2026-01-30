@@ -1,67 +1,49 @@
 import {
-  createContext,
-  useContext,
   useEffect,
+  useMemo,
   useState,
-  type ReactNode,
+  ReactNode,
 } from "react";
-import { apiRequest } from "../api/http";
-
-export type Role = "student" | "instructor" | "admin";
-
-export type AuthUser = {
-  id: number;
-  name: string;
-  email: string;
-  role: Role;
-};
-
-type AuthContextType = {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    role: Role
-  ) => Promise<void>;
-  logout: () => void;
-};
-
-const AuthContext = createContext<AuthContextType | null>(null);
+import * as authApi from "../api/auth";
+import { Role, AuthContextType } from "./auth.types";
+import { AuthContext } from "./auth.context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<authApi.User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isAuthenticated = !!user;
-
-  // restore session
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    apiRequest("/me")
-      .then(setUser)
-      .catch(() => {
+    const restore = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      try {
+        const me = await authApi.me();
+        if (!cancelled) setUser(me);
+      } catch {
         localStorage.removeItem("token");
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    restore();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function login(email: string, password: string) {
-    const res = await apiRequest("/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-
-    localStorage.setItem("token", res.token);
-    setUser(res.user);
+    const { token, user } = await authApi.login(email, password);
+    localStorage.setItem("token", token);
+    setUser(user);
   }
 
   async function register(
@@ -70,41 +52,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     role: Role
   ) {
-    const res = await apiRequest("/register", {
-      method: "POST",
-      body: JSON.stringify({ name, email, password, role }),
-    });
-
-    localStorage.setItem("token", res.token);
-    setUser(res.user);
+    const { token, user } = await authApi.register(
+      name,
+      email,
+      password,
+      role
+    );
+    localStorage.setItem("token", token);
+    setUser(user);
   }
 
   function logout() {
     localStorage.removeItem("token");
     setUser(null);
+    window.location.href = "/login";
   }
 
-  if (loading) return null;
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      role: user?.role ?? null,
+      isAuthenticated: !!user,
+      loading,
+      login,
+      register,
+      logout,
+    }),
+    [user, loading]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        login,
-        register,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used inside AuthProvider");
-  }
-  return ctx;
 }
