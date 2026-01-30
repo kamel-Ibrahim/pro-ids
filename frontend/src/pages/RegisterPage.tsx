@@ -5,6 +5,8 @@ import AuthInput from "../components/auth/AuthInput";
 import PrimaryButton from "../components/ui/PrimaryButton";
 import { useAuth } from "../context/useAuth";
 
+type RegisterRole = "student" | "instructor";
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -12,7 +14,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"student" | "instructor">("student");
+  const [role, setRole] = useState<RegisterRole>("student");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,8 +31,10 @@ export default function RegisterPage() {
         role === "instructor" ? "/instructor/overview" : "/",
         { replace: true }
       );
-    } catch (e: any) {
-      setError(e.message || "Registration failed");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Registration failed";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -65,11 +69,14 @@ export default function RegisterPage() {
         onChange={setPassword}
       />
 
+      {/* ROLE SELECT */}
       <div style={{ marginBottom: 16 }}>
         <label style={{ fontWeight: 600 }}>Account Type</label>
         <select
           value={role}
-          onChange={(e) => setRole(e.target.value as any)}
+          onChange={(e) =>
+            setRole(e.target.value as RegisterRole)
+          }
           style={{
             width: "100%",
             padding: 12,

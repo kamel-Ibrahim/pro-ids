@@ -1,11 +1,9 @@
-import AppLayout from "../layout/AppLayout";
 import CourseCard from "../components/catalog/CourseCard";
 
 const mockCourses = [
   {
     id: 1,
-    image:
-      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d",
+    image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d",
     level: "INTERMEDIATE" as const,
     category: "Development",
     title: "Fullstack Web Development with React",
@@ -16,8 +14,7 @@ const mockCourses = [
   },
   {
     id: 2,
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
     level: "BEGINNER" as const,
     category: "Data Science",
     title: "Introduction to Data Science",
@@ -30,7 +27,7 @@ const mockCourses = [
 
 export default function CourseCatalogPage() {
   return (
-    <AppLayout title="Course Catalog">
+    <>
       {/* SEARCH */}
       <div
         style={{
@@ -55,39 +52,33 @@ export default function CourseCatalogPage() {
           }}
         />
       </div>
+
       {/* FILTERS */}
-<div
-  style={{
-    display: "flex",
-    gap: 12,
-    marginBottom: 20,
-  }}
->
-  <select
-    style={{
-      padding: "10px 14px",
-      borderRadius: 10,
-      border: "1px solid #e5e7eb",
-    }}
-  >
-    <option>All Categories</option>
-    <option>Development</option>
-    <option>Data Science</option>
-  </select>
+      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+        <select
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <option>All Categories</option>
+          <option>Development</option>
+          <option>Data Science</option>
+        </select>
 
-  <select
-    style={{
-      padding: "10px 14px",
-      borderRadius: 10,
-      border: "1px solid #e5e7eb",
-    }}
-  >
-    <option>All Levels</option>
-    <option>Beginner</option>
-    <option>Intermediate</option>
-  </select>
-</div>
-
+        <select
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <option>All Levels</option>
+          <option>Beginner</option>
+          <option>Intermediate</option>
+        </select>
+      </div>
 
       {/* GRID */}
       <div
@@ -101,6 +92,6 @@ export default function CourseCatalogPage() {
           <CourseCard key={course.id} {...course} />
         ))}
       </div>
-    </AppLayout>
+    </>
   );
 }

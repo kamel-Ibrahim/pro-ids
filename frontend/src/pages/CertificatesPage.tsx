@@ -1,14 +1,19 @@
-// src/pages/CertificatesPage.tsx
-import AppLayout from "../layout/AppLayout";
 import CertificateCard from "../components/CertificateCard";
 
+type Certificate = {
+  id: string;
+  studentName: string;
+  courseTitle: string;
+  issuedAt: string;
+};
+
 export default function CertificatesPage() {
-  const certificates = JSON.parse(
+  const certificates: Certificate[] = JSON.parse(
     localStorage.getItem("certificates") || "[]"
   );
 
   return (
-    <AppLayout title="Certificates">
+    <>
       <h2 style={{ marginBottom: 24 }}>Your Certificates</h2>
 
       {certificates.length === 0 ? (
@@ -30,11 +35,11 @@ export default function CertificatesPage() {
             gap: 24,
           }}
         >
-          {certificates.map((c: any) => (
+          {certificates.map((c) => (
             <CertificateCard key={c.id} {...c} />
           ))}
         </div>
       )}
-    </AppLayout>
+    </>
   );
 }

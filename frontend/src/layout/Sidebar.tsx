@@ -47,8 +47,8 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="nav-item">🔁  Instructor</div>
-        <div className="nav-item logout">🚪 Logout Account</div>
+        {/* <div className="nav-item">🔁  Instructor</div> */}
+        {/* <div className="nav-item logout">🚪 Logout Account</div> */}
       </div>
     </aside>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiRequest } from "../../api/http";
+import api from "../../api/client";
 
 type Course = {
   id: number;
@@ -14,18 +14,20 @@ export default function InstructorCoursesPage() {
 
   async function loadCourses() {
     setLoading(true);
-    const data = await apiRequest("/instructor/courses");
-    setCourses(data);
+    const { data } = await api.get("/instructor/courses");
+      setCourses(data);
     setLoading(false);
   }
 
   useEffect(() => {
-    loadCourses();
+    (async () => {
+      await loadCourses();
+    })();
   }, []);
 
   async function handleDelete(id: number) {
     if (!window.confirm("Delete this course?")) return;
-    await apiRequest(`/instructor/courses/${id}`, {
+    await api.get(`/instructor/courses/${id}`, {
       method: "DELETE",
     });
     loadCourses();

@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { apiRequest } from "../../api/http";
+import api from "../../api/client";
+
+type Course = {
+  id: number;
+  title: string;
+  description?: string;
+};
 
 export default function InstructorCreateEditCoursePage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
@@ -14,17 +20,21 @@ export default function InstructorCreateEditCoursePage() {
   useEffect(() => {
     if (!id) return;
 
-    apiRequest("/instructor/courses").then(
-      (courses) => {
-        const course = courses.find(
-          (c: any) => c.id === Number(id)
+    api
+      .get<Course[]>("/instructor/courses")
+      .then((response) => {
+        const course = response.data.find(
+          (c) => c.id === Number(id)
         );
+
         if (course) {
           setTitle(course.title);
-          setDescription(course.description || "");
+          setDescription(course.description ?? "");
         }
-      }
-    );
+      })
+      .catch(() => {
+        // optional: show error UI
+      });
   }, [id]);
 
   async function handleSubmit() {
@@ -32,30 +42,25 @@ export default function InstructorCreateEditCoursePage() {
 
     setLoading(true);
 
-    if (id) {
-      // EDIT
-      await apiRequest(
-        `/instructor/courses/${id}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            title,
-            description,
-          }),
-        }
-      );
-    } else {
-      // CREATE
-      await apiRequest("/instructor/courses", {
-        method: "POST",
-        body: JSON.stringify({
+    try {
+      if (id) {
+        // EDIT
+        await api.put(`/instructor/courses/${id}`, {
           title,
           description,
-        }),
-      });
-    }
+        });
+      } else {
+        // CREATE
+        await api.post("/instructor/courses", {
+          title,
+          description,
+        });
+      }
 
-    navigate("/instructor/courses");
+      navigate("/instructor/courses");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -68,9 +73,7 @@ export default function InstructorCreateEditCoursePage() {
         <label>Course Title</label>
         <input
           value={title}
-          onChange={(e) =>
-            setTitle(e.target.value)
-          }
+          onChange={(e) => setTitle(e.target.value)}
           style={{
             width: "100%",
             padding: 12,

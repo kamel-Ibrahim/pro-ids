@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "../api/http";
+import api from "../api/client";
 import { Link } from "react-router-dom";
 
 type CourseProgress = {
@@ -10,17 +10,30 @@ type CourseProgress = {
 
 export default function MyLearningPage() {
   const [courses, setCourses] = useState<CourseProgress[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiRequest("/my-progress").then(setCourses);
+    api
+      .get<CourseProgress[]>("/my-progress")
+      .then((response) => {
+        if (Array.isArray(response.data)) {
+          setCourses(response.data);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load courses", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  return (
-    <div style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800 }}>
-        My Learning
-      </h1>
+  if (loading) {
+    return <p>Loading...</p>;
+  }
 
+  return (
+    <>
       {courses.map((course) => (
         <div
           key={course.id}
@@ -60,6 +73,6 @@ export default function MyLearningPage() {
           </Link>
         </div>
       ))}
-    </div>
+    </>
   );
 }

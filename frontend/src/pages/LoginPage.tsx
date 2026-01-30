@@ -42,8 +42,10 @@ export default function LoginPage() {
        * AppRoutes handles role-based routing.
        */
       navigate("/", { replace: true });
-    } catch (e: any) {
-      setApiError(e.message || "Login failed");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Login failed";
+      setApiError(message);
     } finally {
       setLoading(false);
     }

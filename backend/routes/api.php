@@ -2,60 +2,80 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\CourseController;
-use App\Http\Controllers\LessonController;
-use App\Http\Controllers\EnrollmentController;
-use App\Http\Controllers\LessonProgressController;
+use App\Http\Controllers\{
+    CourseController,
+    LessonController,
+    QuizController,
+    QuizQuestionController,
+    QuizOptionController,
+    QuizAttemptController,
+    ProgressController,
+    CertificateController
+};
 
 /*
 |--------------------------------------------------------------------------
-| Health
+| Public Auth Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/health', fn () => ['status' => 'ok']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
 /*
 |--------------------------------------------------------------------------
-| Auth (JWT)
+| Authenticated Routes
 |--------------------------------------------------------------------------
 */
-Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/refresh', [AuthController::class, 'refresh']);
+Route::middleware(['auth:sanctum'])->group(function () {
 
-    Route::middleware('auth:api')->group(function () {
-        Route::get('/me', [AuthController::class, 'me']);
-        Route::post('/logout', [AuthController::class, 'logout']);
+    /*
+    |--------------------------------------------------------------------------
+    | Auth / Profile
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSTRUCTOR ROUTES
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('role:instructor')->group(function () {
+
+        // Courses
+        Route::post('/courses', [CourseController::class, 'store']);
+        Route::get('/instructor/courses', [CourseController::class, 'myCourses']);
+        Route::post('/courses/{course}/publish', [CourseController::class, 'publish']);
+
+        // Lessons
+        Route::post('/lessons', [LessonController::class, 'store']);
+
+        // Quizzes
+        Route::post('/quizzes', [QuizController::class, 'store']);
+        Route::post('/quiz-questions', [QuizQuestionController::class, 'store']);
+        Route::post('/quiz-options', [QuizOptionController::class, 'store']);
     });
-});
 
-/*
-|--------------------------------------------------------------------------
-| Student
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api', 'role:student'])->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | STUDENT ROUTES
+    |--------------------------------------------------------------------------
+    */
+
+    // Browse courses
     Route::get('/courses', [CourseController::class, 'index']);
     Route::get('/courses/{course}', [CourseController::class, 'show']);
-    Route::get('/courses/{course}/lessons', [LessonController::class, 'index']);
-
-    Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'enroll']);
-    Route::get('/my-courses', [EnrollmentController::class, 'myCourses']);
 
     // Lesson progress
-    Route::post('/lessons/{lesson}/complete', [LessonProgressController::class, 'complete']);
-    Route::get('/courses/{course}/progress', [LessonProgressController::class, 'progress']);
-});
+    Route::post('/lessons/{lesson}/complete', [LessonController::class, 'complete']);
 
-/*
-|--------------------------------------------------------------------------
-| Instructor
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api', 'role:instructor'])->group(function () {
-    Route::post('/courses', [CourseController::class, 'store']);
-    Route::get('/instructor/courses', [CourseController::class, 'myCourses']);
-    Route::post('/courses/{course}/publish', [CourseController::class, 'publish']);
-    Route::post('/courses/{course}/lessons', [LessonController::class, 'store']);
+    // Quiz attempts
+    Route::post('/quizzes/{quiz}/submit', [QuizAttemptController::class, 'submit']);
+
+    // Course progress
+    Route::get('/courses/{course}/progress', [ProgressController::class, 'courseProgress']);
+
+    // Certificate
+    Route::post('/courses/{course}/certificate', [CertificateController::class, 'generate']);
 });

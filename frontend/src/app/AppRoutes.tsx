@@ -6,6 +6,7 @@ import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 
 // STUDENT
+import StudentLayout from "../layout/StudentLayout";
 import MyLearningPage from "../pages/MylearningPage";
 import CourseCatalogPage from "../pages/CourseCatalogPage";
 import MyProgressPage from "../pages/MyProgressPage";
@@ -26,9 +27,7 @@ export default function AppRoutes() {
 
   return (
     <Routes>
-      {/* ===================== */}
-      {/* AUTH (NOT LOGGED IN) */}
-      {/* ===================== */}
+      {/* AUTH */}
       {!isAuthenticated && (
         <>
           <Route path="/login" element={<LoginPage />} />
@@ -37,60 +36,29 @@ export default function AppRoutes() {
         </>
       )}
 
-      {/* ===================== */}
-      {/* STUDENT MODE */}
-      {/* ===================== */}
+      {/* STUDENT */}
       {isAuthenticated && role === "student" && (
-        <>
+        <Route element={<StudentLayout />}>
           <Route path="/" element={<MyLearningPage />} />
           <Route path="/catalog" element={<CourseCatalogPage />} />
           <Route path="/progress" element={<MyProgressPage />} />
           <Route path="/certificates" element={<CertificatesPage />} />
-          <Route
-            path="/course/:id/lesson/:lessonId"
-            element={<CourseLessonPage />}
-          />
-          <Route
-            path="/student/certificates/:id"
-            element={<CertificateViewPage />}
-          />
+          <Route path="/course/:id/lesson/:lessonId" element={<CourseLessonPage />} />
+          <Route path="/student/certificates/:id" element={<CertificateViewPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </>
+        </Route>
       )}
 
-      {/* ===================== */}
-      {/* INSTRUCTOR MODE */}
-      {/* ===================== */}
+      {/* INSTRUCTOR */}
       {isAuthenticated && role === "instructor" && (
         <Route element={<InstructorLayout />}>
-          <Route
-            path="/instructor/overview"
-            element={<InstructorOverviewPage />}
-          />
-          <Route
-            path="/instructor/courses"
-            element={<InstructorCoursesPage />}
-          />
-          <Route
-            path="/instructor/courses/new"
-            element={<InstructorCreateEditCoursePage />}
-          />
-          <Route
-            path="/instructor/courses/:id/edit"
-            element={<InstructorCreateEditCoursePage />}
-          />
-          <Route
-            path="/instructor/analytics"
-            element={<InstructorAnalyticsPage />}
-          />
-          <Route
-            path="/instructor/settings"
-            element={<InstructorSettingsPage />}
-          />
-          <Route
-            path="*"
-            element={<Navigate to="/instructor/overview" replace />}
-          />
+          <Route path="/instructor/overview" element={<InstructorOverviewPage />} />
+          <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
+          <Route path="/instructor/courses/new" element={<InstructorCreateEditCoursePage />} />
+          <Route path="/instructor/courses/:id/edit" element={<InstructorCreateEditCoursePage />} />
+          <Route path="/instructor/analytics" element={<InstructorAnalyticsPage />} />
+          <Route path="/instructor/settings" element={<InstructorSettingsPage />} />
+          <Route path="*" element={<Navigate to="/instructor/overview" replace />} />
         </Route>
       )}
     </Routes>

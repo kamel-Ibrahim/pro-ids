@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { apiRequest } from "../api/http";
+import api from "../api/client";
 
 type Lesson = {
   id: number;
@@ -20,9 +20,9 @@ export default function CourseLessonPage() {
   useEffect(() => {
     async function loadLesson() {
       try {
-        const data = await apiRequest(`/lessons/${lessonId}`);
-        setLesson(data);
-      } catch (e: any) {
+        const response = await api.get<Lesson>(`/lessons/${lessonId}`);
+        setLesson(response.data);
+      } catch {
         setError("Failed to load lesson");
       } finally {
         setLoading(false);
@@ -36,9 +36,7 @@ export default function CourseLessonPage() {
     if (!lesson) return;
 
     try {
-      await apiRequest(`/lessons/${lesson.id}/complete`, {
-        method: "POST",
-      });
+      await api.post(`/lessons/${lesson.id}/complete`);
       setCompleted(true);
     } catch {
       alert("Failed to mark lesson complete");
