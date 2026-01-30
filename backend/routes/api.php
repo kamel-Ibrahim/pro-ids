@@ -1,14 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\{
     CourseController,
     LessonController,
     QuizController,
     QuizQuestionController,
     QuizOptionController,
-    QuizAttemptController
+    QuizAttemptController,
+    ProgressController,
+    CertificateController
 };
+
+/*
+|--------------------------------------------------------------------------
+| Public Auth Routes
+|--------------------------------------------------------------------------
+*/
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +27,14 @@ use App\Http\Controllers\{
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum'])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auth / Profile
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 
     /*
     |--------------------------------------------------------------------------
@@ -48,9 +67,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/courses', [CourseController::class, 'index']);
     Route::get('/courses/{course}', [CourseController::class, 'show']);
 
-    // Learning progress
+    // Lesson progress
     Route::post('/lessons/{lesson}/complete', [LessonController::class, 'complete']);
 
     // Quiz attempts
     Route::post('/quizzes/{quiz}/submit', [QuizAttemptController::class, 'submit']);
+
+    // Course progress
+    Route::get('/courses/{course}/progress', [ProgressController::class, 'courseProgress']);
+
+    // Certificate
+    Route::post('/courses/{course}/certificate', [CertificateController::class, 'generate']);
 });
