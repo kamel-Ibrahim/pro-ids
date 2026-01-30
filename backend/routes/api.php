@@ -26,7 +26,7 @@ Route::post('/register', [AuthController::class, 'register']);
 | Authenticated Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:api'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
