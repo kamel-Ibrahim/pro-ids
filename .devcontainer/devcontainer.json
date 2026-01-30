@@ -2,9 +2,8 @@
   "name": "Laravel 10 (PHP 8.2)",
   "image": "mcr.microsoft.com/devcontainers/php:8.2",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers/features/mysql:1": {}
+    "ghcr.io/devcontainers/features/node:1": {}
   },
   "forwardPorts": [8000],
-  "postCreateCommand": "composer install || true"
+  "postCreateCommand": "composer --version"
 }
