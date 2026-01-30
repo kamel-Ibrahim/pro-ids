@@ -1,6 +1,4 @@
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://verbose-space-potato-97v6q7v9677r299rq-8000.app.github.dev/api";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export async function apiRequest(
   path: string,
@@ -13,13 +11,12 @@ export async function apiRequest(
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
+      ...(options.headers || {}),
     },
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
+    throw new Error(await res.text());
   }
 
   return res.json();
