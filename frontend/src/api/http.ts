@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const http = axios.create({
-  baseURL: 'https://stunning-space-waddle-wrp4wxpqq5rc54r7-9001.app.github.dev/api'
+  baseURL: 'https://stunning-space-waddle-wrp4wxpqq5rc54r7-8000.app.github.dev/api'
 })
 
 http.interceptors.request.use((config) => {
