@@ -2,23 +2,25 @@ import { Routes, Route } from 'react-router-dom'
 import AppLayout from './layout/AppLayout'
 import ProtectedRoute from './routes/ProtectedRoute'
 
-/* AUTH */
+/* ================= AUTH ================= */
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 
-/* STUDENT */
+/* ================= STUDENT ================= */
 import StudentDashboard from './pages/student/StudentDashboard'
 import MyCourses from './pages/student/MyCourses'
 import StudentCourseLessons from './pages/student/CourseLessons'
 import CourseQuiz from './pages/student/CourseQuiz'
+import Certificate from './pages/student/Certificate'
 
-/* INSTRUCTOR */
+/* ================= INSTRUCTOR ================= */
 import InstructorDashboard from './pages/instructor/InstructorDashboard'
 import CreateCourse from './pages/instructor/CreateCourse'
 import InstructorCourseLessons from './pages/instructor/CourseLessons'
 import CourseQuizBuilder from './pages/instructor/CourseQuizBuilder'
+import CourseAnalytics from './pages/instructor/CourseAnalytics'
 
-/* COURSES (PUBLIC) */
+/* ================= PUBLIC COURSES ================= */
 import CourseCatalog from './pages/courses/CourseCatalog'
 import CourseDetails from './pages/courses/CourseDetails'
 
@@ -36,7 +38,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
 
-          {/* ---------- STUDENT ---------- */}
+          {/* -------- STUDENT -------- */}
           <Route path="/student" element={<StudentDashboard />} />
           <Route path="/student/courses" element={<MyCourses />} />
 
@@ -50,7 +52,12 @@ export default function App() {
             element={<CourseQuiz />}
           />
 
-          {/* ---------- INSTRUCTOR ---------- */}
+          <Route
+            path="/courses/:courseId/certificate"
+            element={<Certificate />}
+          />
+
+          {/* -------- INSTRUCTOR -------- */}
           <Route path="/instructor" element={<InstructorDashboard />} />
 
           <Route
@@ -66,6 +73,11 @@ export default function App() {
           <Route
             path="/instructor/courses/:courseId/quiz"
             element={<CourseQuizBuilder />}
+          />
+
+          <Route
+            path="/instructor/courses/:courseId/analytics"
+            element={<CourseAnalytics />}
           />
 
         </Route>
