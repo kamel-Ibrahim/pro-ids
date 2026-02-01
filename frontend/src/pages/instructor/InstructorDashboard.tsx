@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/api";
-import type { ApiResponse } from "../../types/api";
+// import type { ApiResponse } from "../../types/api";
 
 interface Course {
   id: number;
@@ -11,11 +11,12 @@ interface Course {
 export default function InstructorDashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
 
-  useEffect(() => {
-    api.get<ApiResponse<{ courses: Course[] }>>("/dashboard").then((res) => {
-      setCourses(res.data.data.courses);
-    });
-  }, []);
+useEffect(() => {
+  api.get("/dashboard").then((res) => {
+    // res.data is the object { courses: [...] }
+    setCourses(res.data.courses || []);
+  });
+}, []);
 
   return (
     <div>

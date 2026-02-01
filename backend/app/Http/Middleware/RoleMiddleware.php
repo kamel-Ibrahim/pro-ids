@@ -13,10 +13,6 @@ class RoleMiddleware
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        if (!auth()->user()->role) {
-            return response()->json(['message' => 'User role missing'], 403);
-        }
-
         if (auth()->user()->role !== $role) {
             return response()->json(['message' => 'Forbidden'], 403);
         }

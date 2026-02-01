@@ -9,7 +9,8 @@ export default function AppLayout() {
       <div className="flex-1 flex flex-col">
         <Topbar />
         <main className="flex-1 p-6">
-          <Outlet />
+          {/* THE OUTLET IS REQUIRED TO LOAD YOUR DASHBOARD/COURSES PAGES */}
+          <Outlet /> 
         </main>
       </div>
     </div>
