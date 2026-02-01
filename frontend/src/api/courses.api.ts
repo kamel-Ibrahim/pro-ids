@@ -1,27 +1,21 @@
-import http from './http'
+import http, { unwrapData } from "./http";
+import type { LaravelPaginated } from "./http";
 
-export interface Course {
-  id: number
-  title: string
-  description: string
-  instructor_name?: string
-}
+export type Course = {
+  id: number;
+  title: string;
+  description?: string;
+  category?: string;
+  difficulty?: string;
+};
 
-export function getCourses() {
-  return http.get<Course[]>('/courses')
-}
+export const getCourses = () =>
+  http
+    .get<LaravelPaginated<Course>>("/courses")
+    .then(unwrapData);
 
-export function getCourse(id: number) {
-  return http.get<Course>(`/courses/${id}`)
-}
+export const getCourse = (id: number) =>
+  http.get<Course>(`/courses/${id}`).then(unwrapData);
 
-export function getInstructorCourses() {
-  return http.get<Course[]>('/instructor/courses')
-}
-
-export function createCourse(data: {
-  title: string
-  description: string
-}) {
-  return http.post('/courses', data)
-}
+export const createCourse = (data: Partial<Course>) =>
+  http.post<Course>("/courses", data).then(unwrapData);

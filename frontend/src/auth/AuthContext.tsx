@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { AuthContext } from "./auth.context";
 import type { User, UserRole } from "./auth.types";
 import {
-  loginApi,
-  registerApi,
-  meApi,
-  logoutApi,
+  login as loginRequest,
+  register as registerRequest,
+  me as meRequest,
+  logout as logoutRequest,
 } from "../api/auth.api";
+import http, { ApiError } from "../api/http";
 
 interface Props {
   children: React.ReactNode;
@@ -23,30 +23,26 @@ export function AuthProvider({ children }: Props) {
   // Calculate isAuthenticated
   const isAuthenticated = !!token && !!user;
 
-  // Attach token
+  // Keep localStorage in sync. The http client reads the token per-request.
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-      localStorage.setItem("token", token);
-    } else {
-      delete axios.defaults.headers.common.Authorization;
-      localStorage.removeItem("token");
-    }
+    if (token) localStorage.setItem("token", token);
+    else localStorage.removeItem("token");
   }, [token]);
 
-  // Global 401 handler
+  // Global 401 handler (on our configured http client)
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
+    const interceptorId = http.interceptors.response.use(
       (res) => res,
-      async (error) => {
-        if (error.response?.status === 401) {
+      async (error: unknown) => {
+        const e = error as Partial<ApiError>;
+        if (e && typeof e.status === "number" && e.status === 401) {
           await hardLogout();
         }
         return Promise.reject(error);
       }
     );
 
-    return () => axios.interceptors.response.eject(interceptor);
+    return () => http.interceptors.response.eject(interceptorId);
   }, []);
 
   // Hydrate user
@@ -58,8 +54,8 @@ export function AuthProvider({ children }: Props) {
       }
 
       try {
-        const me = await meApi();
-        setUser(me);
+        const meUser = await meRequest();
+        setUser(meUser);
       } catch {
         await hardLogout();
       } finally {
@@ -71,7 +67,7 @@ export function AuthProvider({ children }: Props) {
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const res = await loginApi(email, password);
+    const res = await loginRequest(email, password);
     setToken(res.token);
     setUser(res.user);
   };
@@ -82,7 +78,7 @@ export function AuthProvider({ children }: Props) {
     password: string,
     role: UserRole
   ) => {
-    const res = await registerApi(name, email, password, role);
+    const res = await registerRequest(name, email, password, role);
     setToken(res.token);
     setUser(res.user);
   };
@@ -91,12 +87,11 @@ export function AuthProvider({ children }: Props) {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common.Authorization;
   };
 
   const logout = async () => {
     try {
-      await logoutApi();
+      await logoutRequest();
     } finally {
       await hardLogout();
     }

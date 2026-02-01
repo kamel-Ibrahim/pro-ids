@@ -1,178 +1,184 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-interface Option {
-  id: number;
-  text: string;
-}
+import http, { ApiError, isApiError, unwrapData } from "../../api/http";
 
-interface Question {
+type QuizOption = {
   id: number;
-  question: string;
-  options: Option[];
-}
+  option_text: string;
+};
 
-interface Quiz {
+type QuizQuestion = {
   id: number;
-  title: string;
-  passing_score: number;
-  questions: Question[];
-}
+  question_text: string;
+  options: QuizOption[];
+};
+
+type Quiz = {
+  id: number;
+  passing_score?: number | null;
+  questions: QuizQuestion[];
+};
 
 export default function CourseQuiz() {
   const { courseId } = useParams();
+  const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [answers, setAnswers] = useState<Record<number, number[]>>({});
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<null | {
-    passed: boolean;
-    score_percentage: number;
-  }>(null);
+
+  const numericCourseId = useMemo(() => Number(courseId), [courseId]);
 
   useEffect(() => {
-    const fetchQuiz = async () => {
-      const res = await axios.get(`/api/quizzes/${courseId}`);
-      setQuiz(res.data.data);
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // NOTE: Your backend route file currently exposes: GET /quizzes/{quiz}
+        // Your frontend routes use /courses/:courseId/quiz, so this assumes quiz id == courseId.
+        // If that is NOT true in your backend, add a backend route: GET /courses/{course}/quiz.
+        const res = await http.get(`/quizzes/${numericCourseId}`);
+        const q = unwrapData<Quiz>(res);
+        setQuiz(q);
+      } catch (err: unknown) {
+        const e: ApiError = isApiError(err)
+          ? err
+          : { status: 0, message: "Failed to load quiz" };
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchQuiz();
-  }, [courseId]);
+    if (Number.isFinite(numericCourseId) && numericCourseId > 0) run();
+    else {
+      setLoading(false);
+      setError("Invalid course id");
+    }
+  }, [numericCourseId]);
 
-  const toggleOption = (
-    questionId: number,
-    optionId: number
-  ) => {
-    setAnswers((prev) => {
-      const current = prev[questionId] || [];
-      return {
-        ...prev,
-        [questionId]: current.includes(optionId)
-          ? current.filter((id) => id !== optionId)
-          : [...current, optionId],
-      };
-    });
-  };
+  const canSubmit = useMemo(() => {
+    if (!quiz) return false;
+    if (!quiz.questions?.length) return false;
+    return quiz.questions.every((q) => Boolean(answers[q.id]));
+  }, [quiz, answers]);
 
-  const submitQuiz = async () => {
+  const submitAttempt = async () => {
     if (!quiz) return;
-
     setSubmitting(true);
+    setError(null);
     try {
-      const res = await axios.post(
-        `/api/quizzes/${quiz.id}/attempt`,
-        { answers }
-      );
-      setResult(res.data.data);
+      // Backend route: POST /student/quizzes/{quiz}/attempt
+      const payload = {
+        answers,
+      };
+      await http.post(`/student/quizzes/${quiz.id}/attempt`, payload);
+      navigate(`/courses/${numericCourseId}`);
+    } catch (err: unknown) {
+      const e: ApiError = isApiError(err)
+        ? err
+        : { status: 0, message: "Failed to submit attempt" };
+      setError(e.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!quiz) {
+  if (loading) {
     return (
-      <div className="h-full flex items-center justify-center text-zinc-400">
-        Loading quiz…
+      <div className="container">
+        <div className="card">Loading quiz…</div>
       </div>
     );
   }
 
-  if (result) {
+  if (error) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="max-w-md w-full rounded-3xl p-8 bg-[var(--panel)] border border-[var(--border)] backdrop-blur-xl text-center space-y-6">
-          <h1 className="text-3xl font-bold">
-            {result.passed ? "Passed 🎉" : "Not Passed"}
-          </h1>
-
-          <p className="text-zinc-400">
-            Your score:{" "}
-            <span className="font-semibold text-white">
-              {result.score_percentage}%
-            </span>
-          </p>
-
-          {result.passed ? (
-            <a
-              href={`/courses/${courseId}/certificate`}
-              className="inline-block px-6 py-3 rounded-xl bg-[var(--accent)] text-black font-semibold hover:brightness-110 transition"
-            >
-              View Certificate →
-            </a>
-          ) : (
-            <button
-              onClick={() => setResult(null)}
-              className="px-6 py-3 rounded-xl border border-[var(--border)] text-zinc-300 hover:bg-white/5 transition"
-            >
-              Retry Quiz
-            </button>
-          )}
+      <div className="container">
+        <div className="card">
+          <div className="text-red-600 font-semibold mb-2">{error}</div>
+          <button
+            className="px-4 py-2 rounded bg-slate-900 text-white"
+            onClick={() => navigate(-1)}
+          >
+            Go back
+          </button>
         </div>
       </div>
     );
   }
 
+  if (!quiz) {
+    return (
+      <div className="container">
+        <div className="card">Quiz not found.</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-3xl mx-auto space-y-10">
-      {/* HEADER */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {quiz.title}
-        </h1>
-        <p className="text-zinc-400 mt-1">
-          Passing score: {quiz.passing_score}%
+    <div className="container">
+      <div className="card">
+        <h1 className="text-xl font-semibold mb-2">Quiz</h1>
+        <p className="text-sm text-slate-600 mb-6">
+          Answer all questions, then submit.
         </p>
-      </div>
 
-      {/* QUESTIONS */}
-      <div className="space-y-6">
-        {quiz.questions.map((q, index) => (
-          <div
-            key={q.id}
-            className="rounded-2xl p-6 bg-[var(--panel)] border border-[var(--border)] backdrop-blur-xl space-y-4"
+        <div className="space-y-6">
+          {quiz.questions.map((q, idx) => (
+            <div key={q.id} className="p-4 rounded border border-slate-200">
+              <div className="font-medium mb-3">
+                {idx + 1}. {q.question_text}
+              </div>
+              <div className="space-y-2">
+                {q.options.map((opt) => {
+                  const checked = answers[q.id] === opt.id;
+                  return (
+                    <label
+                      key={opt.id}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer border ${
+                        checked ? "border-slate-900 bg-slate-50" : "border-slate-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`q-${q.id}`}
+                        checked={checked}
+                        onChange={() =>
+                          setAnswers((prev) => ({ ...prev, [q.id]: opt.id }))
+                        }
+                      />
+                      <span>{opt.option_text}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between">
+          <button
+            className="px-4 py-2 rounded border border-slate-300"
+            onClick={() => navigate(-1)}
+            disabled={submitting}
           >
-            <div className="font-semibold">
-              {index + 1}. {q.question}
-            </div>
+            Back
+          </button>
 
-            <div className="space-y-2">
-              {q.options.map((opt) => {
-                const selected =
-                  answers[q.id]?.includes(opt.id);
-
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() =>
-                      toggleOption(q.id, opt.id)
-                    }
-                    className={`w-full text-left px-4 py-3 rounded-xl border transition
-                      ${
-                        selected
-                          ? "border-cyan-400 bg-cyan-400/10"
-                          : "border-[var(--border)] hover:bg-white/5"
-                      }
-                    `}
-                  >
-                    {opt.text}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* SUBMIT */}
-      <div className="flex justify-end">
-        <button
-          onClick={submitQuiz}
-          disabled={submitting}
-          className="px-6 py-3 rounded-xl bg-[var(--accent)] text-black font-semibold hover:brightness-110 transition disabled:opacity-50"
-        >
-          {submitting ? "Submitting…" : "Submit Quiz"}
-        </button>
+          <button
+            className={`px-4 py-2 rounded text-white ${
+              canSubmit ? "bg-slate-900" : "bg-slate-400 cursor-not-allowed"
+            }`}
+            disabled={!canSubmit || submitting}
+            onClick={submitAttempt}
+          >
+            {submitting ? "Submitting…" : "Submit"}
+          </button>
+        </div>
       </div>
     </div>
   );

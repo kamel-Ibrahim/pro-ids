@@ -1,25 +1,26 @@
-import http from './http'
+import http, { unwrapData } from "./http";
 
-export interface Lesson {
-  id: number
-  title: string
-  content: string
-  order: number
-  completed?: boolean
-}
+export type Lesson = {
+  id: number;
+  course_id: number;
+  title: string;
+  content?: string | null;
+  video_url?: string | null;
+  // Some older frontend screens used "order". Your DB schema doesn't have it,
+  // so we keep it optional to avoid crashes if older API responses include it.
+  order?: number;
+  created_at?: string;
+};
 
-export function getLessons(courseId: number) {
-  return http.get<Lesson[]>(`/courses/${courseId}/lessons`)
-}
+export const getLessons = async (courseId: number): Promise<Lesson[]> => {
+  const res = await http.get(`/courses/${courseId}/lessons`);
+  return unwrapData<Lesson[]>(res);
+};
 
-export function createLesson(courseId: number, data: {
-  title: string
-  content: string
-  order: number
-}) {
-  return http.post(`/courses/${courseId}/lessons`, data)
-}
-
-export function completeLesson(lessonId: number) {
-  return http.post(`/lessons/${lessonId}/complete`)
-}
+export const createLesson = async (
+  courseId: number,
+  data: Pick<Lesson, "title" | "content" | "video_url"> & { order?: number }
+): Promise<Lesson> => {
+  const res = await http.post(`/courses/${courseId}/lessons`, data);
+  return unwrapData<Lesson>(res);
+};

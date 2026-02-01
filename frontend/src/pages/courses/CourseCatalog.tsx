@@ -26,7 +26,11 @@ export default function CourseCatalog() {
   }, [])
 
   if (loading) {
-    return <CircularProgress />
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return (

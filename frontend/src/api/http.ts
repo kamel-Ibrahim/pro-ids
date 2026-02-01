@@ -1,7 +1,8 @@
-import axios, { AxiosError } from "axios";
+import axios from "axios";
+import type { AxiosError, AxiosResponse } from "axios";
 
 /**
- * What Laravel sends back on errors
+ * Laravel error shape
  */
 type BackendErrorResponse = {
   message?: string;
@@ -10,7 +11,7 @@ type BackendErrorResponse = {
 };
 
 /**
- * What the frontend will ALWAYS receive
+ * Normalized frontend error
  */
 export type ApiError = {
   status: number;
@@ -18,6 +19,20 @@ export type ApiError = {
   fieldErrors?: Record<string, string[]>;
 };
 
+/**
+ * Laravel pagination shape
+ */
+export type LaravelPaginated<T> = {
+  data: T[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+};
+
+/**
+ * Axios instance
+ */
 const http = axios.create({
   baseURL:
     "https://stunning-space-waddle-wrp4wxpqq5rc54r7-8000.app.github.dev/api",
@@ -38,7 +53,7 @@ http.interceptors.request.use((config) => {
 });
 
 /**
- * 🔥 Normalize ALL errors (NO `any`)
+ * Normalize ALL backend errors
  */
 http.interceptors.response.use(
   (response) => response,
@@ -55,5 +70,23 @@ http.interceptors.response.use(
     return Promise.reject(apiError);
   }
 );
+
+/**
+ * ✅ Typed unwrap (NO any)
+ */
+export const unwrapData = <T>(
+  res: AxiosResponse<T | { data: T }>
+): T => {
+  if (typeof res.data === "object" && res.data !== null && "data" in res.data) {
+    return (res.data as { data: T }).data;
+  }
+  return res.data as T;
+};
+
+export const isApiError = (err: unknown): err is ApiError =>
+  typeof err === "object" &&
+  err !== null &&
+  "status" in err &&
+  "message" in err;
 
 export default http;

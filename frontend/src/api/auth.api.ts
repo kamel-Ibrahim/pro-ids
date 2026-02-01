@@ -1,64 +1,26 @@
-import axios from "axios";
+import http, { unwrapData } from "./http";
 
-const API =
-  "https://stunning-space-waddle-wrp4wxpqq5rc54r7-8000.app.github.dev/api";
-
-/**
- * LOGIN (student or instructor)
- */
-export const loginApi = async (email: string, password: string) => {
-  const { data } = await axios.post(`${API}/login`, { email, password });
-  return data.data;
+type RegisterPayload = {
+  name: string;
+  email: string;
+  password: string;
 };
 
-/**
- * REGISTER (student OR instructor)
- * This keeps the original API but routes to the correct backend endpoint.
- */
-export const registerApi = async (
-  name: string,
-  email: string,
-  password: string,
-  role: "student" | "instructor"
-) => {
-  const endpoint =
-    role === "instructor"
-      ? `${API}/instructor/register`
-      : `${API}/register`;
-
-  const { data } = await axios.post(endpoint, {
-    name,
-    email,
-    password,
-  });
-
-  return data.data;
+export type AuthUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: "student" | "instructor";
 };
 
-/**
- * CURRENT USER
- */
-export const meApi = async () => {
-  const token = localStorage.getItem("token");
+export const register = (data: RegisterPayload) =>
+  http.post("/register", data).then(unwrapData);
 
-  const { data } = await axios.get(`${API}/me`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+export const login = (data: { email: string; password: string }) =>
+  http.post("/login", data).then(unwrapData);
 
-  return data.data;
-};
+export const me = () =>
+  http.get<AuthUser>("/me").then(unwrapData);
 
-/**
- * LOGOUT
- */
-export const logoutApi = async () => {
-  const token = localStorage.getItem("token");
-
-  await axios.post(
-    `${API}/logout`,
-    {},
-    {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    }
-  );
-};
+export const logout = () =>
+  http.post("/logout").then(() => undefined);

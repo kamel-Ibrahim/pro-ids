@@ -1,29 +1,15 @@
-import http from './http'
+import http, { unwrapData } from "./http";
 
-export interface QuizQuestion {
-  id: number
-  question: string
-  options: {
-    id: number
-    text: string
-  }[]
-}
+export type Quiz = {
+  id: number;
+  course_id: number;
+  passing_score: number;
+};
 
-export interface Quiz {
-  id: number
-  title: string
-  questions: QuizQuestion[]
-}
+export const getQuiz = (id: number) =>
+  http.get<Quiz>(`/quizzes/${id}`).then(unwrapData);
 
-export function getCourseQuiz(courseId: number) {
-  return http.get<Quiz>(`/courses/${courseId}/quiz`)
-}
-
-export function submitQuiz(
-  quizId: number,
-  answers: Record<number, number>
-) {
-  return http.post(`/quizzes/${quizId}/submit`, {
-    answers,
-  })
-}
+export const submitQuizAttempt = (quizId: number, answers: unknown[]) =>
+  http
+    .post<{ score: number }>(`/student/quizzes/${quizId}/attempt`, { answers })
+    .then(unwrapData);
