@@ -7,18 +7,32 @@ use Illuminate\Database\Eloquent\Model;
 class Course extends Model
 {
     protected $fillable = [
+        'instructor_id',
         'title',
         'description',
-        'instructor_id',
+        'category',
+        'difficulty',
+        'thumbnail',
+        'published',
     ];
 
-    public function students()
+    protected $casts = [
+        'published' => 'boolean',
+    ];
+
+    public function lessons()
     {
-        return $this->belongsToMany(User::class, 'enrollments');
+        return $this->hasMany(Lesson::class);
     }
 
-    public function quiz()
+    public function enrollments()
     {
-        return $this->hasOne(Quiz::class);
+        return $this->hasMany(Enrollment::class);
+    }
+
+    // Optional: if you want "students" semantics via enrollments
+    public function students()
+    {
+        return $this->belongsToMany(User::class, 'enrollments', 'course_id', 'user_id');
     }
 }

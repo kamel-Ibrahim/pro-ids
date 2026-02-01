@@ -7,69 +7,83 @@ use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 
 class QuizAttemptController extends Controller
 {
+    /**
+     * Start & submit a quiz attempt.
+     */
     public function store(Request $request, Quiz $quiz)
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
 
-        if (!$quiz->published) {
-            return response()->json(['message' => 'Quiz not published'], 403);
-        }
-
-        $alreadyPassed = QuizAttempt::where('user_id', $user->id)
-            ->where('quiz_id', $quiz->id)
-            ->where('score', '>=', $quiz->passing_score)
-            ->exists();
-
-        if ($alreadyPassed) {
-            return response()->json(['message' => 'Already passed'], 403);
-        }
-
-        $data = $request->validate([
-            'answers' => ['required', 'array'],
-            'answers.*.question_id' => ['required', 'integer'],
-            'answers.*.selected_option_ids' => ['required', 'array'],
-            'answers.*.selected_option_ids.*' => ['integer'],
+        $request->validate([
+            'answers' => 'required|array',
+            'started_at' => 'required|date',
         ]);
 
-        $quiz->load('questions.options');
+        // ----- Time limit enforcement -----
+        if ($quiz->time_limit) {
+            $startedAt = Carbon::parse($request->started_at);
+            $elapsedMinutes = $startedAt->diffInMinutes(now());
 
-        $correct = 0;
-
-        foreach ($quiz->questions as $question) {
-            $answer = collect($data['answers'])
-                ->firstWhere('question_id', $question->id);
-
-            if (!$answer) continue;
-
-            $correctIds = $question->options
-                ->where('is_correct', true)
-                ->pluck('id')
-                ->sort()
-                ->values();
-
-            $selected = collect($answer['selected_option_ids'])
-                ->sort()
-                ->values();
-
-            if ($correctIds->all() === $selected->all()) {
-                $correct++;
+            if ($elapsedMinutes > $quiz->time_limit) {
+                return response()->json([
+                    'message' => 'Quiz time limit exceeded.'
+                ], 403);
             }
         }
 
-        $score = round(($correct / max(1, $quiz->questions->count())) * 100, 2);
+        // ----- Load questions (shuffle if enabled) -----
+        $questionsQuery = $quiz->questions()->with('options');
 
-        QuizAttempt::create([
-            'user_id' => $user->id,
+        $questions = $quiz->shuffle_questions
+            ? $questionsQuery->inRandomOrder()->get()
+            : $questionsQuery->get();
+
+        // ----- Scoring -----
+        $score = 0;
+        $total = $questions->count();
+
+        foreach ($questions as $question) {
+            $submitted = $request->answers[$question->id] ?? null;
+
+            if ($submitted === null) {
+                continue;
+            }
+
+            $correctOptions = $question->options->where('is_correct', true)->pluck('id')->sort()->values();
+
+            // MSQ (multiple select)
+            if ($question->question_type === 'MSQ') {
+                $submittedOptions = collect($submitted)->sort()->values();
+
+                if ($submittedOptions->equals($correctOptions)) {
+                    $score++;
+                }
+            }
+            // MCQ / TF (single answer)
+            else {
+                if (in_array($submitted, $correctOptions->toArray(), true)) {
+                    $score++;
+                }
+            }
+        }
+
+        $percentage = $total > 0 ? round(($score / $total) * 100) : 0;
+
+        // ----- Store attempt -----
+        $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
-            'score' => $score,
+            'user_id' => $user->id,
+            'score' => $percentage,
         ]);
 
         return response()->json([
-            'score' => $score,
-            'passed' => $score >= $quiz->passing_score,
+            'attempt_id' => $attempt->id,
+            'score' => $percentage,
+            'passed' => $percentage >= $quiz->passing_score,
         ]);
     }
 }

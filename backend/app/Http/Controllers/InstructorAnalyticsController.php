@@ -2,50 +2,48 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
-use App\Models\QuizAttempt;
 use App\Models\Course;
+use App\Models\QuizAttempt;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class InstructorAnalyticsController extends Controller
 {
-    /**
-     * Instructor analytics: top & low performing quizzes
-     */
     public function index()
     {
-        $user = Auth::guard('api')->user();
+        $instructor = Auth::guard('api')->user();
 
-        if ($user->role !== 'instructor') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only instructors can access analytics'
-            ], 403);
-        }
+        // Courses created
+        $courses = Course::where('created_by', $instructor->id)->pluck('id');
 
-        $courseIds = Course::where('created_by', $user->id)->pluck('id');
+        // Total enrollments
+        $totalEnrollments = DB::table('enrollments')
+            ->whereIn('course_id', $courses)
+            ->count();
 
-        $quizPerformance = QuizAttempt::whereIn('quiz_id', function ($q) use ($courseIds) {
-                $q->select('id')->from('quizzes')->whereIn('course_id', $courseIds);
+        // Quiz averages
+        $quizAverages = QuizAttempt::select(
+                'quiz_id',
+                DB::raw('AVG(score) as average_score')
+            )
+            ->whereIn('quiz_id', function ($q) use ($courses) {
+                $q->select('id')
+                  ->from('quizzes')
+                  ->whereIn('course_id', $courses);
             })
-            ->selectRaw('quiz_id, MAX(score) as best_score')
-            ->groupBy('quiz_id');
-
-        $topQuizzes = (clone $quizPerformance)
-            ->orderBy('best_score', 'desc')
-            ->take(5)
+            ->groupBy('quiz_id')
             ->get();
 
-        $lowQuizzes = (clone $quizPerformance)
-            ->orderBy('best_score', 'asc')
-            ->take(5)
-            ->get();
+        // Top & low performing quizzes
+        $topQuizzes = $quizAverages->sortByDesc('average_score')->take(3)->values();
+        $lowQuizzes = $quizAverages->sortBy('average_score')->take(3)->values();
 
         return response()->json([
-            'success' => true,
-            'data' => [
-                'top_quizzes' => $topQuizzes,
-                'low_quizzes' => $lowQuizzes,
-            ]
+            'courses_created' => $courses->count(),
+            'total_enrollments' => $totalEnrollments,
+            'quiz_averages' => $quizAverages,
+            'top_quizzes' => $topQuizzes,
+            'low_quizzes' => $lowQuizzes,
         ]);
     }
 }

@@ -9,51 +9,60 @@ use Illuminate\Support\Facades\Auth;
 class CourseController extends Controller
 {
     /**
-     * Public course listing with search & filtering
+     * Public course listing with search & filtering (Student-facing)
      */
     public function index(Request $request)
     {
-        $query = Course::query()
-            ->where('published', true);
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:200',
+            'category' => 'nullable|string|max:100',
+            'difficulty' => 'nullable|string|max:50',
+            'sort' => 'nullable|in:popular,newest',
+        ]);
 
-        // Keyword search
-        if ($request->filled('search')) {
-            $search = $request->input('search');
+        $query = Course::query()->where('published', true);
 
+        if (!empty($validated['search'])) {
+            $search = $validated['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'LIKE', "%{$search}%")
-                  ->orWhere('description', 'LIKE', "%{$search}%");
+                    ->orWhere('description', 'LIKE', "%{$search}%");
             });
         }
 
-        // Filters
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
+        if (!empty($validated['category'])) {
+            $query->where('category', $validated['category']);
         }
 
-        if ($request->filled('difficulty')) {
-            $query->where('difficulty', $request->difficulty);
+        if (!empty($validated['difficulty'])) {
+            $query->where('difficulty', $validated['difficulty']);
         }
 
         // Sorting
-        if ($request->input('sort') === 'popular') {
-            $query->withCount('students')
-                  ->orderByDesc('students_count');
+        if (($validated['sort'] ?? 'newest') === 'popular') {
+            // Use enrollments_count (since your schema has enrollments)
+            $query->withCount('enrollments')->orderByDesc('enrollments_count');
         } else {
             $query->orderByDesc('created_at');
         }
 
-        return response()->json($query->get());
+        // Pagination prevents giant payloads and frontend “hangs”
+        $perPage = min(max((int) $request->input('per_page', 12), 1), 50);
+
+        return response()->json($query->paginate($perPage));
     }
 
     /**
-     * Show course
+     * Show course details
      */
     public function show(Course $course)
     {
         if (!$course->published) {
             return response()->json(['error' => 'Course not found'], 404);
         }
+
+        // If your frontend expects lessons, include them:
+        // return response()->json($course->load('lessons'));
 
         return response()->json($course);
     }
@@ -63,12 +72,16 @@ class CourseController extends Controller
      */
     public function store(Request $request)
     {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'category' => 'nullable|string|max:100',
             'difficulty' => 'nullable|string|max:50',
-            'thumbnail' => 'nullable|string',
+            'thumbnail' => 'nullable|string|max:255',
         ]);
 
         $course = Course::create([
@@ -89,6 +102,10 @@ class CourseController extends Controller
      */
     public function myCourses()
     {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         return response()->json(
             Course::where('instructor_id', Auth::id())
                 ->orderByDesc('created_at')
@@ -101,7 +118,11 @@ class CourseController extends Controller
      */
     public function publish(Course $course)
     {
-        if ($course->instructor_id !== Auth::id()) {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        if ((int) $course->instructor_id !== (int) Auth::id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
