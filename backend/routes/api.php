@@ -17,6 +17,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     Route::get('/courses', [CourseController::class, 'index']);
+    Route::post('/courses', [CourseController::class, 'store']); // ADD THIS LINE
     Route::get('/courses/{course}', [CourseController::class, 'show']);
     Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'store']);
 

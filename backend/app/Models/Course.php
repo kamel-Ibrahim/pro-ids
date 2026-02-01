@@ -3,12 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Course extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
+        'short_description', // ADDED
         'description',
+        'category',          // ADDED
+        'difficulty',        // ADDED
+        'estimated_duration',// ADDED
+        'thumbnail',         // ADDED
         'instructor_id',
     ];
 
@@ -25,5 +33,10 @@ class Course extends Model
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);
+    }
+
+    public function lessons()
+    {
+        return $this->hasMany(Lesson::class);
     }
 }

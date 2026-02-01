@@ -13,4 +13,10 @@ class User extends Authenticatable implements JWTSubject
 
     public function getJWTIdentifier() { return $this->getKey(); }
     public function getJWTCustomClaims() { return []; }
+
+    public function taughtCourses()
+{
+    // Points to the Course model where instructor_id is THIS user's ID
+    return $this->hasMany(Course::class, 'instructor_id');
+}
 }
