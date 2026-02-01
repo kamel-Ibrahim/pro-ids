@@ -17,7 +17,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Register a new user (STUDENT ONLY)
+     * Register STUDENT
      */
     public function register(Request $request)
     {
@@ -48,7 +48,38 @@ class AuthController extends Controller
     }
 
     /**
-     * Login
+     * ✅ Register INSTRUCTOR
+     */
+    public function registerInstructor(Request $request)
+    {
+        $data = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $user = User::create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role'     => 'instructor',
+        ]);
+
+        $token = Auth::guard('api')->login($user);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => config('jwt.ttl') * 60,
+                'user' => $user,
+            ]
+        ], 201);
+    }
+
+    /**
+     * Login (student or instructor)
      */
     public function login(Request $request)
     {
@@ -86,7 +117,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout (invalidate JWT)
+     * Logout
      */
     public function logout()
     {

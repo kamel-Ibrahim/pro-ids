@@ -18,14 +18,34 @@ use App\Http\Controllers\InstructorAnalyticsController;
 use App\Http\Controllers\Api\Student\QuizAttemptController as StudentQuizAttemptController;
 use App\Http\Controllers\Api\Instructor\QuizAttemptController as InstructorQuizAttemptController;
 
+/*
+|--------------------------------------------------------------------------
+| Public Auth Routes
+|--------------------------------------------------------------------------
+*/
+
+// Student registration
 Route::post('/register', [AuthController::class, 'register']);
+
+// Login (students + instructors)
 Route::post('/login', [AuthController::class, 'login']);
 
+// ✅ ADD THIS — Instructor self registration
+Route::post('/instructor/register', [AuthController::class, 'registerInstructor']);
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (JWT)
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth:api')->group(function () {
 
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    /*
+    | Student Routes
+    */
     Route::middleware('role:student')->group(function () {
         Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
         Route::post('/courses/{courseId}/enroll', [EnrollmentController::class, 'enroll']);
@@ -36,9 +56,13 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/certificate/{courseId}', [CertificateController::class, 'download']);
     });
 
+    /*
+    | Instructor Routes
+    */
     Route::middleware('role:instructor')->group(function () {
         Route::get('/instructor/dashboard', [InstructorDashboardController::class, 'index']);
         Route::get('/instructor/analytics', [InstructorAnalyticsController::class, 'index']);
+
         Route::post('/courses', [CourseController::class, 'store']);
         Route::put('/courses/{id}', [CourseController::class, 'update']);
         Route::delete('/courses/{id}', [CourseController::class, 'destroy']);
@@ -49,6 +73,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/instructor/quizzes/{quiz}/attempts', [InstructorQuizAttemptController::class, 'index']);
     });
 
+    /*
+    | Shared Routes
+    */
     Route::get('/courses', [CourseController::class, 'index']);
     Route::get('/courses/{id}', [CourseController::class, 'show']);
     Route::get('/courses/{courseId}/lessons', [LessonController::class, 'index']);
