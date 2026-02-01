@@ -2,39 +2,45 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Quiz;
-use App\Models\Course;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 
 class QuizController extends Controller
 {
-    public function store(Request $request)
+    public function show(Quiz $quiz)
     {
-        $data = $request->validate([
-            'course_id' => ['required', 'exists:courses,id'],
-            'title' => ['required', 'string'],
-            'passing_score' => ['required', 'integer', 'min:0', 'max:100'],
-        ]);
-
-        $course = Course::findOrFail($data['course_id']);
-
-        if ($course->instructor_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $quiz = Quiz::create([
-            'course_id' => $course->id,
-            'title' => $data['title'],
-            'passing_score' => $data['passing_score'],
-            'published' => false,
-        ]);
-
-        return response()->json($quiz, 201);
+        return $quiz->load('questions.options');
     }
 
-    public function show($quizId)
+    public function submit(Request $request, Quiz $quiz)
     {
-        return Quiz::with('questions.options')->findOrFail($quizId);
+        $data = $request->validate([
+            'answers' => 'required|array',
+        ]);
+
+        $score = 0;
+        $total = $quiz->questions->count();
+
+        foreach ($quiz->questions as $question) {
+            if (
+                isset($data['answers'][$question->id]) &&
+                $question->correct_option_id == $data['answers'][$question->id]
+            ) {
+                $score++;
+            }
+        }
+
+        QuizAttempt::create([
+            'user_id' => auth()->id(),
+            'quiz_id' => $quiz->id,
+            'score' => $score,
+            'total' => $total,
+        ]);
+
+        return response()->json([
+            'score' => $score,
+            'total' => $total,
+        ]);
     }
 }

@@ -1,5 +1,4 @@
 <?php
-// backend/app/Models/QuizAttempt.php
 
 namespace App\Models;
 
@@ -11,15 +10,6 @@ class QuizAttempt extends Model
         'user_id',
         'quiz_id',
         'score',
+        'total',
     ];
-
-    public function quiz()
-    {
-        return $this->belongsTo(Quiz::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 }

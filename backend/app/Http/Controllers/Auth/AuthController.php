@@ -1,131 +1,63 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:api')->only(['me', 'logout']);
-    }
-
-    /**
-     * Register STUDENT
-     */
     public function register(Request $request)
     {
         $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
+            'role' => 'required|in:student,instructor',
         ]);
 
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
+            'name' => $data['name'],
+            'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role'     => 'student',
+            'role' => $data['role'],
         ]);
 
-        $token = Auth::guard('api')->login($user);
+        $token = JWTAuth::fromUser($user);
 
         return response()->json([
-            'success' => true,
-            'data' => [
-                'token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => config('jwt.ttl') * 60,
-                'user' => $user,
-            ]
-        ], 201);
+            'token' => $token,
+            'user' => $user,
+        ]);
     }
 
-    /**
-     * ✅ Register INSTRUCTOR
-     */
-    public function registerInstructor(Request $request)
-    {
-        $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-        ]);
-
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role'     => 'instructor',
-        ]);
-
-        $token = Auth::guard('api')->login($user);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => config('jwt.ttl') * 60,
-                'user' => $user,
-            ]
-        ], 201);
-    }
-
-    /**
-     * Login (student or instructor)
-     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
-        if (! $token = Auth::guard('api')->attempt($credentials)) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid email or password.'],
-            ]);
+        if (!$token = auth()->attempt($credentials)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
         return response()->json([
-            'success' => true,
-            'data' => [
-                'token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => config('jwt.ttl') * 60,
-                'user' => Auth::guard('api')->user(),
-            ]
+            'token' => $token,
+            'user' => auth()->user(),
         ]);
     }
 
-    /**
-     * Get authenticated user
-     */
     public function me()
     {
-        return response()->json([
-            'success' => true,
-            'data' => Auth::guard('api')->user(),
-        ]);
+        return response()->json(auth()->user());
     }
 
-    /**
-     * Logout
-     */
     public function logout()
     {
-        Auth::guard('api')->logout();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Successfully logged out',
-        ]);
+        auth()->logout();
+        return response()->json(['success' => true]);
     }
 }

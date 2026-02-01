@@ -7,22 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Course extends Model
 {
     protected $fillable = [
-        'instructor_id',
         'title',
         'description',
-        'category',
-        'difficulty',
-        'thumbnail',
-        'published',
+        'instructor_id',
     ];
 
-    protected $casts = [
-        'published' => 'boolean',
-    ];
-
-    public function lessons()
+    public function instructor()
     {
-        return $this->hasMany(Lesson::class);
+        return $this->belongsTo(User::class, 'instructor_id');
     }
 
     public function enrollments()
@@ -30,9 +22,8 @@ class Course extends Model
         return $this->hasMany(Enrollment::class);
     }
 
-    // Optional: if you want "students" semantics via enrollments
-    public function students()
+    public function quizzes()
     {
-        return $this->belongsToMany(User::class, 'enrollments', 'course_id', 'user_id');
+        return $this->hasMany(Quiz::class);
     }
 }
