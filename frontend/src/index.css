@@ -23,3 +23,8 @@ input, select, textarea {
 button.primary {
   @apply bg-cyan-500 hover:bg-cyan-400 text-black font-black uppercase tracking-widest py-4 rounded-2xl transition-all active:scale-95 disabled:opacity-30;
 }
+.video-iframe-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}

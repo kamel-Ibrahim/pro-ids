@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/api";
 
 interface Lesson {
@@ -7,92 +7,108 @@ interface Lesson {
   title: string;
   video_url: string | null;
   content: string | null;
-  duration?: string;
 }
 
 export default function InstructorCourseLessons() {
-  const { courseId } = useParams();
+  const { courseId } = useParams<{ courseId: string }>();
+  const navigate = useNavigate();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ title: "", video_url: "", content: "", order: 1 });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState({ title: "", video_url: "", content: "" });
 
-  const fetchLessons = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await api.get(`/courses/${courseId}/lessons`);
-      // Standardize data check based on Laravel Resource return
-      const lessonData = res.data.data || res.data;
-      setLessons(Array.isArray(lessonData) ? lessonData : []);
-    } catch (err) {
-      console.error("Failed to fetch lessons", err);
-    }
+      setLessons(res.data.data || res.data);
+    } catch (err) { console.error(err); }
   }, [courseId]);
 
-  useEffect(() => { 
-    fetchLessons(); 
-  }, [fetchLessons]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleEdit = (lesson: Lesson) => {
+    setEditingId(lesson.id);
+    setForm({ title: lesson.title, video_url: lesson.video_url || "", content: lesson.content || "" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Remove this lesson?")) return;
+    try {
+        await api.delete(`/lessons/${id}`);
+        fetchData();
+    } catch { alert("Delete failed"); }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post(`/courses/${courseId}/lessons`, form);
-      setForm({ title: "", video_url: "", content: "", order: lessons.length + 2 });
-      fetchLessons();
-    } finally { 
-      setLoading(false); 
-    }
+      if (editingId) {
+        await api.put(`/lessons/${editingId}`, form);
+      } else {
+        await api.post(`/courses/${courseId}/lessons`, form);
+      }
+      setForm({ title: "", video_url: "", content: "" });
+      setEditingId(null);
+      fetchData();
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2">
-        <h2 className="text-2xl font-black mb-6 text-white uppercase">Course <span className="text-cyan-400">Curriculum</span></h2>
-        <div className="space-y-3">
-          {lessons.length > 0 ? lessons.map((l, i) => (
-            <div key={l.id} className="glass-card p-4 flex items-center gap-4 hover:border-zinc-600 transition">
-              <span className="text-zinc-700 font-black text-2xl italic">0{i + 1}</span>
-              <div className="flex-1">
-                <h4 className="font-bold text-white">{l.title}</h4>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                  {l.video_url ? "Video Lesson" : "Text Lesson"}
-                </p>
-              </div>
-              <button className="text-zinc-600 hover:text-red-400 transition text-xs font-bold">REMOVE</button>
-            </div>
-          )) : (
-            <div className="p-10 text-center border-2 border-dashed border-zinc-800 rounded-3xl text-zinc-600 italic">
-              No lessons added yet.
-            </div>
-          )}
-        </div>
+    <div className="max-w-5xl mx-auto space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-black text-white uppercase italic">Module <span className="text-cyan-400">Builder</span></h2>
+        <button onClick={() => navigate(-1)} className="text-zinc-500 font-bold text-xs">BACK TO HUB</button>
       </div>
 
-      <div className="glass-card p-6 h-fit sticky top-6 neon-border bg-zinc-900/80">
-        <h3 className="text-lg font-bold mb-6 text-white border-b border-zinc-800 pb-2">Add New Lesson</h3>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1">Lesson Title</label>
-            <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
-          </div>
-          
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1">Video URL (YouTube)</label>
-            <input value={form.video_url} onChange={e => setForm({...form, video_url: e.target.value})} />
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-3">
+          {lessons.map((l, i) => (
+            <div key={l.id} className="glass-card p-6 flex items-center gap-6 hover:border-cyan-500/50 transition group">
+              <span className="text-zinc-700 font-black text-3xl italic">0{i + 1}</span>
+              <div className="flex-1">
+                <h4 className="font-bold text-white text-lg">{l.title}</h4>
+              </div>
+              <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => handleEdit(l)} className="text-cyan-400 font-black text-[10px] uppercase">Edit</button>
+                <button onClick={() => handleDelete(l.id)} className="text-red-500 font-black text-[10px] uppercase">Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1">Content / Script</label>
-            <textarea 
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 h-32 focus:ring-2 focus:ring-cyan-500/50 outline-none" 
-              value={form.content} 
-              onChange={e => setForm({...form, content: e.target.value})} 
-            />
-          </div>
+        <div className="glass-card p-8 h-fit sticky top-6 neon-border bg-zinc-900/50">
+          <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 border-b border-zinc-800 pb-4">
+            {editingId ? 'Modify Lesson' : 'Create Lesson'}
+          </h3>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <input placeholder="Lesson Title" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+            
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">YouTube Iframe Code</label>
+              <textarea 
+                className="h-28 text-[10px] font-mono leading-tight bg-black" 
+                placeholder='Paste <iframe...> here' 
+                value={form.video_url} 
+                onChange={e => setForm({...form, video_url: e.target.value})} 
+              />
+            </div>
 
-          <button type="submit" className="primary mt-2" disabled={loading}>
-            {loading ? "SAVING..." : "PUBLISH LESSON"}
-          </button>
-        </form>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Content</label>
+              <textarea className="h-40 text-sm" value={form.content} onChange={e => setForm({...form, content: e.target.value})} />
+            </div>
+
+            <button type="submit" className="primary py-4" disabled={loading}>
+              {loading ? "PROCESSING..." : editingId ? "SAVE CHANGES" : "PUBLISH CONTENT"}
+            </button>
+            
+            {editingId && (
+              <button type="button" onClick={() => {setEditingId(null); setForm({title:"", video_url:"", content:""})}} className="text-[10px] font-bold text-zinc-600 uppercase text-center mt-2">Cancel Edit</button>
+            )}
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -5,99 +5,60 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Certificate;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class CertificateController extends Controller
 {
-    /**
-     * Generate certificate if course is completed.
-     */
     public function generate($courseId)
     {
         $user = Auth::guard('api')->user();
+        $course = Course::with(['lessons', 'quizzes'])->findOrFail($courseId);
 
-        $course = Course::with(['lessons', 'quiz', 'instructor'])->findOrFail($courseId);
-
-        // ----- Verify lesson completion -----
-        $totalLessons = $course->lessons()->count();
-
-        $completedLessons = $course->lessons()
-            ->whereHas('progress', function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->where('completed', true);
-            })
+        // 1. Verify Lesson Completion
+        $totalLessons = $course->lessons->count();
+        $completedCount = DB::table('lesson_progress')
+            ->where('user_id', $user->id)
+            ->whereIn('lesson_id', $course->lessons->pluck('id'))
+            ->where('completed', true)
             ->count();
 
-        if ($totalLessons > 0 && $completedLessons !== $totalLessons) {
-            return response()->json([
-                'message' => 'Course lessons not fully completed.'
-            ], 403);
+        if ($totalLessons > 0 && $completedCount < $totalLessons) {
+            return response()->json(['message' => 'Complete all lessons first.'], 403);
         }
 
-        // ----- Verify quiz passing -----
-        if ($course->quiz) {
-            $latestAttempt = $course->quiz->attempts()
+        // 2. Verify Quiz (at least one pass)
+        if ($course->quizzes->count() > 0) {
+            $passed = DB::table('quiz_attempts')
                 ->where('user_id', $user->id)
-                ->orderByDesc('created_at')
-                ->first();
+                ->whereIn('quiz_id', $course->quizzes->pluck('id'))
+                ->where('score', '>=', 60)
+                ->exists();
 
-            if (!$latestAttempt || $latestAttempt->score < $course->quiz->passing_score) {
-                return response()->json([
-                    'message' => 'Required quiz not passed.'
-                ], 403);
+            if (!$passed) {
+                return response()->json(['message' => 'Pass the assessment first.'], 403);
             }
         }
 
-        // ----- Prevent duplicate certificates -----
-        $existing = Certificate::where('course_id', $course->id)
-            ->where('user_id', $user->id)
-            ->first();
-
-        if ($existing) {
-            return response()->json($existing);
-        }
-
-        // ----- Generate certificate -----
-        $verificationCode = strtoupper(Str::random(10));
+        $certificate = Certificate::firstOrCreate(
+            ['course_id' => $course->id, 'user_id' => $user->id],
+            ['verification_code' => strtoupper(Str::random(10)), 'issued_at' => now()]
+        );
 
         $pdf = Pdf::loadView('certificates.template', [
             'student' => $user->name,
             'course' => $course->title,
             'date' => now()->format('Y-m-d'),
             'instructor' => $course->instructor->name ?? 'Instructor',
-            'code' => $verificationCode,
+            'code' => $certificate->verification_code,
         ]);
 
-        $path = 'certificates/' . $verificationCode . '.pdf';
-
-        Storage::disk('public')->put($path, $pdf->output());
-
-        $certificate = Certificate::create([
-            'course_id' => $course->id,
-            'user_id' => $user->id,
-            'download_url' => $path,
-            'verification_code' => $verificationCode,
-            'generated_at' => now(),
-        ]);
-
-        return response()->json($certificate);
+        return $pdf->stream("Certificate-{$course->id}.pdf");
     }
 
-    /**
-     * Download certificate PDF.
-     */
     public function download($courseId)
     {
-        $user = Auth::guard('api')->user();
-
-        $certificate = Certificate::where('course_id', $courseId)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
-        return response()->download(
-            storage_path('app/public/' . $certificate->download_url)
-        );
+        return $this->generate($courseId);
     }
 }

@@ -1,19 +1,25 @@
 <?php
 
 return [
+    /*
+    |--------------------------------------------------------------------------
+    | Cross-Origin Resource Sharing (CORS) Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure your settings for cross-origin resource sharing
+    | or "CORS". This determines what cross-origin operations may execute
+    | in web browsers. You are free to adjust these settings as needed.
+    |
+    */
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    // IMPORTANT: use wildcard for Codespaces
-    'allowed_origins' => [
-        '*',
-    ],
+    // We allow all origins (*) because Codespace URLs change every time
+    'allowed_origins' => ['*'],
 
-    'allowed_origins_patterns' => [
-        '/^https:\/\/.*\.app\.github\.dev$/',
-    ],
+    'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
@@ -21,5 +27,5 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 ];

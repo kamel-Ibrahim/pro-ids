@@ -22,7 +22,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    // Course Discovery
     Route::get('/courses', [CourseController::class, 'index']);
     Route::get('/courses/{course}', [CourseController::class, 'show']);
 
@@ -35,17 +34,29 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/quizzes/{quiz}', [QuizController::class, 'show']);
     Route::post('/quizzes/{quiz}/submit', [QuizController::class, 'submit']);
 
-    Route::post('/courses/{course}/certificate/generate', [CertificateController::class, 'generate']);
-    Route::get('/courses/{course}/certificate/download', [CertificateController::class, 'download']);
+    Route::get('/courses/{course}/certificate/generate', [CertificateController::class, 'generate']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
-    /* INSTRUCTOR FLOW */
+    /* INSTRUCTOR FLOW - FULL CRUD */
     Route::middleware(['role:instructor'])->group(function () {
+        // Course Management
         Route::post('/courses', [CourseController::class, 'store']);
         Route::put('/courses/{course}', [CourseController::class, 'update']);
+        Route::delete('/courses/{course}', [CourseController::class, 'destroy']);
+        
+        // Lesson Management
         Route::post('/courses/{course}/lessons', [LessonController::class, 'store']);
+        Route::put('/lessons/{lesson}', [LessonController::class, 'update']);
+        Route::delete('/lessons/{lesson}', [LessonController::class, 'destroy']);
+        
+        // Quiz Management
         Route::post('/courses/{course}/quizzes', [QuizController::class, 'store']);
+        Route::put('/quizzes/{quiz}', [QuizController::class, 'update']);
+        Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy']);
+        
         Route::post('/quizzes/{quiz}/questions', [QuizQuestionController::class, 'store']);
+        Route::delete('/questions/{question}', [QuizQuestionController::class, 'destroy']);
+        
         Route::get('/instructor/analytics', [InstructorAnalyticsController::class, 'index']);
     });
 });

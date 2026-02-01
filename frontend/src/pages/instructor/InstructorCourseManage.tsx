@@ -1,115 +1,136 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../../api/api";
 
-interface Lesson {
-  id: number;
-  title: string;
-}
-
-interface Quiz {
-  id: number;
-  title: string;
-  passing_score: number;
-}
-
-interface CourseDetails {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  difficulty: string;
-  lessons: Lesson[];
-  quizzes: Quiz[];
-}
-
 export default function InstructorCourseManage() {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { courseId } = useParams();
   const navigate = useNavigate();
-  const [course, setCourse] = useState<CourseDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    short_description: "",
+    description: "",
+    category: "",
+    difficulty: "",
+    estimated_duration: ""
+  });
 
-  const fetchDetails = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await api.get(`/courses/${courseId}`);
-      // Handle both { data: ... } and direct objects
-      const data = res.data.data || res.data;
-      setCourse(data);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId]);
+      const data = res.data.data;
+      setForm({
+        title: data.title,
+        short_description: data.short_description || "",
+        description: data.description || "",
+        category: data.category || "",
+        difficulty: data.difficulty || "Beginner",
+        estimated_duration: data.estimated_duration || ""
+      });
+    } catch { alert("Course not found"); navigate("/instructor"); }
+    finally { setLoading(false); }
+  }, [courseId, navigate]);
 
-  useEffect(() => { fetchDetails(); }, [fetchDetails]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading) return <div className="p-10 text-cyan-400 animate-pulse font-black">LOADING...</div>;
-  if (!course) return <div className="p-10 text-red-500 text-center glass-card">Course data unavailable.</div>;
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.put(`/courses/${courseId}`, form);
+      alert("Course metadata updated!");
+    } catch { alert("Update failed"); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("ARE YOU SURE? This will delete all lessons and quizzes associated with this course. This cannot be undone.")) return;
+    try {
+      await api.delete(`/courses/${courseId}`);
+      navigate("/instructor");
+    } catch { alert("Delete failed"); }
+  };
+
+  if (loading) return <div className="p-20 text-center text-cyan-400 animate-pulse font-black">OPENING MANAGEMENT CONSOLE...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto pb-20">
-      <div className="flex justify-between items-start mb-10 border-b border-zinc-800 pb-8">
+    <div className="max-w-6xl mx-auto pb-20 space-y-10">
+      {/* Header with Navigation */}
+      <div className="flex justify-between items-center border-b border-zinc-800 pb-8">
         <div>
-          <div className="flex gap-2">
-            <span className="text-[10px] font-bold text-cyan-400 uppercase bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
-                {course.category}
-            </span>
-            <span className="text-[10px] font-bold text-zinc-500 uppercase bg-zinc-800 px-3 py-1 rounded-full">
-                {course.difficulty}
-            </span>
-          </div>
-          <h1 className="text-5xl font-black text-white mt-4 tracking-tighter uppercase italic">{course.title}</h1>
+          <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter">Manage <span className="text-cyan-400">Course</span></h1>
+          <p className="text-zinc-500 text-sm mt-1 font-bold uppercase tracking-widest">ID: MODULE-{courseId}</p>
         </div>
-        <button onClick={() => navigate('/instructor')} className="text-zinc-500 hover:text-white text-xs font-bold transition">BACK</button>
+        <div className="flex gap-4">
+          <Link to={`/instructor/courses/${courseId}/lessons`} className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-black transition">CURRICULUM</Link>
+          <Link to={`/instructor/courses/${courseId}/quiz`} className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-black transition">ASSESSMENT</Link>
+          <button onClick={handleDelete} className="px-6 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-xs font-black transition">DELETE COURSE</button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        
-        {/* Curriculum List */}
-        <section>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white uppercase tracking-widest">Lessons</h2>
-            <Link to={`/instructor/courses/${courseId}/lessons`} className="text-cyan-400 text-xs font-black">+ ADD</Link>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Left Column: Editor */}
+        <form onSubmit={handleUpdate} className="lg:col-span-2 space-y-6 glass-card p-10 neon-border">
+          <h2 className="text-white font-black text-xs uppercase tracking-[0.3em] mb-4">Course Metadata</h2>
+          
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Title</label>
+            <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
           </div>
-          <div className="space-y-3">
-            {/* The ?? [] prevents the "map of undefined" crash */}
-            {(course.lessons ?? []).length > 0 ? (course.lessons ?? []).map((lesson, idx) => (
-              <div key={lesson.id} className="glass-card p-4 flex items-center gap-4 border border-zinc-800">
-                <span className="text-zinc-700 font-black italic">0{idx + 1}</span>
-                <h4 className="flex-1 text-sm font-bold text-zinc-200">{lesson.title}</h4>
-              </div>
-            )) : (
-              <p className="text-zinc-600 italic text-sm p-4">No lessons added to this course yet.</p>
-            )}
-          </div>
-        </section>
 
-        {/* Quizzes List */}
-        <section>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white uppercase tracking-widest">Quizzes</h2>
-            <Link to={`/instructor/courses/${courseId}/quiz`} className="text-cyan-400 text-xs font-black">+ NEW</Link>
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Tagline / Short Description</label>
+            <input value={form.short_description} onChange={e => setForm({...form, short_description: e.target.value})} required />
           </div>
-          <div className="space-y-3">
-            {(course.quizzes ?? []).length > 0 ? (course.quizzes ?? []).map((quiz) => (
-              <div key={quiz.id} className="glass-card p-6 border-l-4 border-l-cyan-500">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-white">{quiz.title}</h4>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Pass Score: {quiz.passing_score}%</p>
-                  </div>
-                  <Link to={`/instructor/quizzes/${quiz.id}/questions`} className="text-cyan-400 text-[10px] font-black hover:text-white transition">
-                    MANAGE QUESTIONS
-                  </Link>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Category</label>
+                <input value={form.category} onChange={e => setForm({...form, category: e.target.value})} required />
+            </div>
+            <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Difficulty</label>
+                <select value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})} className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-4 text-white">
+                    <option>Beginner</option>
+                    <option>Intermediate</option>
+                    <option>Advanced</option>
+                </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Detailed Description</label>
+            <textarea className="h-48" value={form.description} onChange={e => setForm({...form, description: e.target.value})} required />
+          </div>
+
+          <button type="submit" disabled={saving} className="primary w-full py-5 text-sm">
+            {saving ? "SYNCING CHANGES..." : "SAVE COURSE UPDATES"}
+          </button>
+        </form>
+
+        {/* Right Column: Quick Stats/Info */}
+        <div className="space-y-6">
+            <div className="glass-card p-8 bg-cyan-500/5 border-cyan-500/20">
+                <h3 className="text-white font-black text-[10px] uppercase tracking-widest mb-4">Quick Insights</h3>
+                <div className="space-y-4">
+                    <div className="flex justify-between border-b border-zinc-800 pb-2">
+                        <span className="text-zinc-500 text-xs">Estimated Duration</span>
+                        <span className="text-white text-xs font-bold">{form.estimated_duration}</span>
+                    </div>
                 </div>
-              </div>
-            )) : (
-              <p className="text-zinc-600 italic text-sm p-4">No assessment created for this course.</p>
-            )}
-          </div>
-        </section>
-
+                <input 
+                    className="mt-4 w-full bg-black/40 text-xs p-3 border-zinc-800" 
+                    placeholder="Update Duration (e.g. 10h)" 
+                    value={form.estimated_duration} 
+                    onChange={e => setForm({...form, estimated_duration: e.target.value})}
+                />
+            </div>
+            
+            <Link to={`/instructor/courses/${courseId}/analytics`} className="block glass-card p-8 hover:border-zinc-600 transition group text-center">
+                <p className="text-zinc-500 font-bold text-[10px] uppercase group-hover:text-cyan-400">View Detailed Analytics</p>
+            </Link>
+        </div>
       </div>
     </div>
   );
