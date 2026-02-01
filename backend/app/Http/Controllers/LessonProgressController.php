@@ -10,43 +10,32 @@ use Illuminate\Support\Facades\Auth;
 class LessonProgressController extends Controller
 {
     /**
-     * Mark a lesson as completed by an enrolled student
+     * Mark a lesson as completed by an enrolled student (Spec 3.4)
      */
     public function complete($lessonId)
     {
-        $user = Auth::guard('api')->user();
+        // Use the authenticated user
+        $user = Auth::user();
 
-        // Defensive role check
-        if ($user->role !== 'student') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only students can complete lessons'
-            ], 403);
+        if (!$user || $user->role !== 'student') {
+            return response()->json(['message' => 'Only students can complete lessons'], 403);
         }
 
-        $lesson = Lesson::with('course')->findOrFail($lessonId);
+        $lesson = Lesson::findOrFail($lessonId);
 
-        // Ensure student is enrolled in the course
-        $enrolled = Enrollment::where('user_id', $user->id)
+        // Verify enrollment (Spec 2.1)
+        $isEnrolled = Enrollment::where('user_id', $user->id)
             ->where('course_id', $lesson->course_id)
             ->exists();
 
-        if (! $enrolled) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You must be enrolled in the course to complete lessons'
-            ], 403);
+        if (!$isEnrolled) {
+            return response()->json(['message' => 'You must be enrolled in the course first'], 403);
         }
 
-        // Idempotent completion
+        // Idempotent completion: firstOrCreate prevents duplicates
         $progress = LessonProgress::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'lesson_id' => $lesson->id,
-            ],
-            [
-                'completed' => true,
-            ]
+            ['user_id' => $user->id, 'lesson_id' => $lesson->id],
+            ['completed' => true, 'completed_at' => now()]
         );
 
         return response()->json([

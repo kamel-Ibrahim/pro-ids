@@ -4,14 +4,22 @@ import Topbar from "./Topbar";
 
 export default function AppLayout() {
   return (
-    <div className="min-h-screen flex bg-black text-white">
+    <div className="flex h-screen bg-[#050505] text-zinc-100 overflow-hidden">
+      {/* Fixed Sidebar */}
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col relative overflow-hidden">
         <Topbar />
-        <main className="flex-1 p-6">
-          {/* THE OUTLET IS REQUIRED TO LOAD YOUR DASHBOARD/COURSES PAGES */}
-          <Outlet /> 
+        
+        <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
+            <Outlet />
+          </div>
         </main>
+
+        {/* Subtle background glow */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none -z-10" />
       </div>
     </div>
   );

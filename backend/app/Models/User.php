@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable; // Optional
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -14,9 +14,19 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTIdentifier() { return $this->getKey(); }
     public function getJWTCustomClaims() { return []; }
 
-    public function taughtCourses()
-{
-    // Points to the Course model where instructor_id is THIS user's ID
-    return $this->hasMany(Course::class, 'instructor_id');
-}
+    /**
+     * Relationship: Courses the student is enrolled in.
+     */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class, 'user_id');
+    }
+
+    /**
+     * Relationship: Courses the instructor teaches.
+     */
+    public function taughtCourses(): HasMany
+    {
+        return $this->hasMany(Course::class, 'instructor_id');
+    }
 }
