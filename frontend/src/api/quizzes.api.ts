@@ -1,15 +1,14 @@
-import http, { unwrapData } from "./http";
+import api, { unwrap } from "./api";
 
-export type Quiz = {
-  id: number;
-  course_id: number;
-  passing_score: number;
-};
-
+/**
+ * Get a quiz by ID
+ * No Quiz type exists → return unknown
+ */
 export const getQuiz = (id: number) =>
-  http.get<Quiz>(`/quizzes/${id}`).then(unwrapData);
+  api.get(`/quizzes/${id}`).then(unwrap);
 
-export const submitQuizAttempt = (quizId: number, answers: unknown[]) =>
-  http
-    .post<{ score: number }>(`/student/quizzes/${quizId}/attempt`, { answers })
-    .then(unwrapData);
+/**
+ * Submit quiz answers
+ */
+export const submitQuiz = (id: number, payload: unknown) =>
+  api.post(`/quizzes/${id}/submit`, payload).then(unwrap);
