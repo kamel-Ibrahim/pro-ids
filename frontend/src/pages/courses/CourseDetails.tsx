@@ -22,7 +22,10 @@ export default function CourseDetails() {
 
   useEffect(() => {
     api.get(`/courses/${courseId}`)
-      .then((res) => setCourse(res.data.data || res.data))
+      .then((res) => {
+        setCourse(res.data.data || res.data);
+      })
+      .catch(() => alert("Course not found"))
       .finally(() => setLoading(false));
   }, [courseId]);
 
@@ -32,47 +35,59 @@ export default function CourseDetails() {
       await api.post(`/courses/${courseId}/enroll`);
       alert("Enrolled successfully!");
       navigate('/student');
-    } catch {
-      alert("Enrollment failed. Are you already enrolled?");
+    } catch{
+      alert("You are already enrolled in this course.");
     }
   };
 
-  if (loading) return <div className="p-20 text-cyan-400 font-black animate-pulse uppercase tracking-widest text-center">Opening curriculum...</div>;
-  if (!course) return <div className="text-red-500 p-20 text-center font-bold">Course not found.</div>;
+  if (loading) return <div className="p-20 text-center text-cyan-400 font-black animate-pulse">DECRYPTING SYLLABUS...</div>;
+  if (!course) return <div className="p-20 text-center text-red-500">Course Error</div>;
 
   return (
-    <div className="max-w-5xl mx-auto py-10">
-      {/* Hero Section */}
-      <div className="glass-card p-12 mb-8 relative overflow-hidden bg-gradient-to-br from-zinc-900 via-black to-black border-cyan-500/20">
+    <div className="max-w-5xl mx-auto py-10 space-y-8">
+      {/* Hero Header */}
+      <div className="glass-card p-12 neon-border bg-gradient-to-br from-zinc-900 to-black relative overflow-hidden">
         <div className="relative z-10">
-            <span className="text-cyan-400 font-black text-[10px] uppercase tracking-[0.3em] mb-4 block">AVAILABLE MODULE</span>
-            <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic mb-6">{course.title}</h1>
-            
-            <div className="flex flex-wrap gap-6 mb-10">
-                <div className="flex flex-col">
-                    <span className="text-zinc-600 text-[9px] font-bold uppercase mb-1">Instructor</span>
-                    <span className="text-zinc-200 font-bold">{course.instructor?.name || "Global Expert"}</span>
-                </div>
-                <div className="flex flex-col border-l border-zinc-800 pl-6">
-                    <span className="text-zinc-600 text-[9px] font-bold uppercase mb-1">Duration</span>
-                    <span className="text-zinc-200 font-bold">{course.estimated_duration || "Self-paced"}</span>
-                </div>
-                <div className="flex flex-col border-l border-zinc-800 pl-6">
-                    <span className="text-zinc-600 text-[9px] font-bold uppercase mb-1">Level</span>
-                    <span className="text-zinc-200 font-bold">{course.difficulty}</span>
-                </div>
-            </div>
+          <div className="flex gap-3 mb-6">
+            <span className="bg-cyan-500/10 text-cyan-400 text-[9px] font-black px-3 py-1 rounded-full border border-cyan-500/20 uppercase tracking-widest">
+              {course.category}
+            </span>
+            <span className="bg-zinc-800 text-zinc-400 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+              {course.difficulty}
+            </span>
+          </div>
+          
+          <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter mb-8 leading-none">
+            {course.title}
+          </h1>
 
-            <button onClick={handleEnroll} className="primary px-16 py-5 shadow-2xl shadow-cyan-500/20">ENROLL NOW</button>
+          <div className="flex gap-10 mb-10">
+            <div className="flex flex-col">
+                <span className="text-zinc-600 text-[10px] font-bold uppercase">Instructor</span>
+                <span className="text-zinc-200 font-bold">{course.instructor?.name}</span>
+            </div>
+            <div className="flex flex-col border-l border-zinc-800 pl-10">
+                <span className="text-zinc-600 text-[10px] font-bold uppercase">Duration</span>
+                <span className="text-zinc-200 font-bold">{course.estimated_duration}</span>
+            </div>
+          </div>
+
+          <button onClick={handleEnroll} className="primary px-16 py-5 shadow-2xl shadow-cyan-500/20">
+            ENROLL IN MODULE
+          </button>
         </div>
-        <div className="absolute -right-20 -top-20 w-96 h-96 bg-cyan-500/10 blur-[100px] rounded-full" />
+        
+        {/* Decorative background element */}
+        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-cyan-500/10 blur-[100px] rounded-full" />
       </div>
 
-      {/* Description Section */}
+      {/* Description */}
       <div className="glass-card p-12">
-        <h3 className="text-zinc-500 font-black text-xs uppercase tracking-widest mb-6 pb-4 border-b border-zinc-800">Course Overview</h3>
-        <div className="text-zinc-300 text-xl leading-relaxed whitespace-pre-line">
-            {course.description}
+        <h2 className="text-zinc-500 font-black text-xs uppercase tracking-[0.3em] mb-8 border-b border-zinc-800 pb-4">
+          Course Description
+        </h2>
+        <div className="text-zinc-300 text-xl leading-relaxed whitespace-pre-line font-medium">
+          {course.description}
         </div>
       </div>
     </div>

@@ -37,6 +37,7 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::post('/courses/{course}/certificate/generate', [CertificateController::class, 'generate']);
     Route::get('/courses/{course}/certificate/download', [CertificateController::class, 'download']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     /* INSTRUCTOR FLOW */
     Route::middleware(['role:instructor'])->group(function () {

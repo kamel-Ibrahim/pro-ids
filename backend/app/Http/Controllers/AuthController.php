@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers; // No "\Auth" here
+namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth; // Add this
+use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -27,7 +27,6 @@ class AuthController extends Controller
                 'role' => $data['role'],
             ]);
 
-            // Force the 'api' guard specifically
             $token = Auth::guard('api')->login($user);
 
             return response()->json([
@@ -35,7 +34,6 @@ class AuthController extends Controller
                 'user' => $user,
             ], 201);
         } catch (\Exception $e) {
-            // This will help you see the error in the network tab if it fails
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -47,24 +45,54 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!$token = auth()->attempt($credentials)) {
+        if (!$token = Auth::guard('api')->attempt($credentials)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
         return response()->json([
             'token' => $token,
-            'user' => auth()->user(),
+            'user' => Auth::guard('api')->user(),
         ]);
     }
 
     public function me()
     {
-        return response()->json(auth()->user());
+        return response()->json(Auth::guard('api')->user());
     }
 
     public function logout()
     {
-        auth()->logout();
+        Auth::guard('api')->logout();
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Change Password Logic (Spec 3.1)
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        // Check if old password matches
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'message' => 'The provided current password does not match our records.'
+            ], 422);
+        }
+
+        // Update to new password
+        $user->update([
+            'password' => Hash::make($request->new_password)
+        ]);
+
+        return response()->json([
+            'message' => 'Password updated successfully.'
+        ]);
     }
 }

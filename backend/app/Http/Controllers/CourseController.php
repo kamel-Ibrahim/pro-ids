@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class CourseController extends Controller
@@ -12,20 +14,18 @@ class CourseController extends Controller
     {
         $query = Course::with('instructor');
 
-        // Only show approved courses to students, instructors see all their own
-        if (Auth::user()->role === 'student') {
+        // Spec 2.2: Students only see approved courses
+        // Instructors see all courses
+        if (Auth::check() && Auth::user()->role === 'student') {
             $query->where('is_approved', true);
         }
 
         // Spec 3.9: Search & Filtering
-        if ($request->has('search')) {
+        if ($request->has('search') && $request->search != '') {
             $query->where('title', 'like', '%' . $request->search . '%');
         }
-        if ($request->has('category')) {
+        if ($request->has('category') && $request->category != '') {
             $query->where('category', $request->category);
-        }
-        if ($request->has('difficulty')) {
-            $query->where('difficulty', $request->difficulty);
         }
 
         return response()->json($query->latest()->get());
@@ -33,7 +33,10 @@ class CourseController extends Controller
 
     public function show(Course $course)
     {
-        return response()->json(['data' => $course->load(['lessons', 'quizzes'])]);
+        // Load nested data for the Course Details and Management pages
+        return response()->json([
+            'data' => $course->load(['lessons', 'quizzes', 'instructor'])
+        ]);
     }
 
     public function store(Request $request)
@@ -47,17 +50,14 @@ class CourseController extends Controller
             'estimated_duration' => 'required|string',
         ]);
 
-        $course = $request->user()->taughtCourses()->create($data);
-        return response()->json(['data' => $course], 201);
-    }
+        /** @var User $user */
+        $user = $request->user();
 
-    // Spec 2.2: Admin Approval
-    public function approve(Course $course)
-    {
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'instructor') {
-             return response()->json(['message' => 'Unauthorized'], 403);
-        }
-        $course->update(['is_approved' => true]);
-        return response()->json(['message' => 'Course approved and live.']);
+        // Automatically set is_approved to true for now so students can see it
+        $data['is_approved'] = true; 
+
+        $course = $user->taughtCourses()->create($data);
+
+        return response()->json(['data' => $course], 201);
     }
 }

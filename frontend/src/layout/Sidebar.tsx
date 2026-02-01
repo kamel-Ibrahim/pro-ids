@@ -62,20 +62,26 @@ export default function Sidebar() {
 
       {user && (
         <div className="p-6 border-t border-zinc-800/50 bg-zinc-900/20">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-purple-600 border-2 border-zinc-800 shadow-xl" />
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold text-white truncate">{user.name}</p>
-              <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">{user.role}</p>
-            </div>
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="w-full py-3 bg-zinc-900 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 rounded-xl text-xs font-black transition-all border border-zinc-800 hover:border-red-500/20"
-          >
-            SIGN OUT
-          </button>
-        </div>
+  <NavLink 
+    to="/settings/password" 
+    className={({ isActive }) => `flex items-center gap-3 mb-6 p-2 rounded-xl transition-all ${isActive ? 'bg-cyan-500/10 ring-1 ring-cyan-500/30' : 'hover:bg-white/5'}`}
+  >
+    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-purple-600 border-2 border-zinc-800 shadow-xl shrink-0" />
+    <div className="overflow-hidden">
+      <p className="text-sm font-bold text-white truncate">{user.name}</p>
+      <p className="text-[9px] font-black text-cyan-500 uppercase tracking-widest flex items-center gap-1">
+        {user.role} <span className="text-zinc-600">• Edit</span>
+      </p>
+    </div>
+  </NavLink>
+  
+  <button 
+    onClick={handleLogout}
+    className="w-full py-3 bg-zinc-900 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 rounded-xl text-xs font-black transition-all border border-zinc-800 hover:border-red-500/20"
+  >
+    SIGN OUT
+  </button>
+</div>
       )}
     </aside>
   );
