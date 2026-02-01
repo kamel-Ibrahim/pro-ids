@@ -1,34 +1,26 @@
 import { useEffect, useState } from "react";
-import api, { unwrapList } from "../../api/api";
+import api from "../../api/api";
+import type { ApiResponse } from "../../types/api";
 
-type CourseLike = {
-  id?: number;
-  title?: string;
-  description?: string;
-  instructor?: {
-    name?: string;
-  };
-};
+interface Course {
+  id: number;
+  title: string;
+}
 
 export default function CourseCatalog() {
-  const [courses, setCourses] = useState<CourseLike[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
 
   useEffect(() => {
-    api.get("/courses").then((res) => {
-      setCourses(unwrapList(res));
+    api.get<ApiResponse<Course[]>>("/courses").then((res) => {
+      setCourses(res.data.data);
     });
   }, []);
 
   return (
-    <div className="container">
-      {courses.map((course, i) => (
-        <div key={course.id ?? i} className="card">
-          <h3>{course.title ?? "Untitled course"}</h3>
-          <p>{course.description}</p>
-          <small>
-            Instructor: {course.instructor?.name ?? "Unknown"}
-          </small>
-        </div>
+    <div>
+      <h1>Courses</h1>
+      {courses.map((c) => (
+        <div key={c.id}>{c.title}</div>
       ))}
     </div>
   );

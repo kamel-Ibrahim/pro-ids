@@ -1,21 +1,15 @@
-import api, { unwrap } from "./api";
+import api from "./api";
 
-export type AuthUser = {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-};
+export const login = (email: string, password: string) =>
+  api.post("/login", { email, password });
 
 export const register = (data: {
   name: string;
   email: string;
   password: string;
-}) => api.post("/register", data).then(unwrap);
+  role: "student" | "instructor";
+}) => api.post("/register", data);
 
-export const login = (data: { email: string; password: string }) =>
-  api.post("/login", data).then(unwrap);
+export const me = () => api.get("/me");
 
-export const me = () => api.get("/me").then(unwrap);
-
-export const logout = () => api.post("/logout").then(() => undefined);
+export const logout = () => api.post("/logout");

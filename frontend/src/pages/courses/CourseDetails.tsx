@@ -1,71 +1,50 @@
-import {
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  Paper,
-} from '@mui/material'
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { getCourse, type Course } from '../../api/courses.api'
-import { enroll } from '../../api/enrollments.api'
-import { useAuth } from '../../auth/useAuth'
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import api from "../../api/api";
+import type { ApiResponse } from "../../types/api";
+
+interface Quiz {
+  id: number;
+  title: string;
+}
+
+interface Course {
+  id: number;
+  title: string;
+  description: string;
+  quizzes: Quiz[];
+}
 
 export default function CourseDetails() {
-  const { id } = useParams()
-  const { user } = useAuth()
-
-  const [course, setCourse] = useState<Course | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [enrolling, setEnrolling] = useState(false)
-  const [enrolled, setEnrolled] = useState(false)
+  const { courseId } = useParams<{ courseId: string }>();
+  const [course, setCourse] = useState<Course | null>(null);
 
   useEffect(() => {
-    if (!id) return
-    getCourse(Number(id))
-      .then((res) => setCourse(res.data))
-      .finally(() => setLoading(false))
-  }, [id])
+    if (!courseId) return;
 
-  const handleEnroll = async () => {
-    if (!id) return
-    setEnrolling(true)
-    try {
-      await enroll(Number(id))
-      setEnrolled(true)
-    } finally {
-      setEnrolling(false)
-    }
-  }
+    api.get<ApiResponse<Course>>(`/courses/${courseId}`).then((res) => {
+      setCourse(res.data.data);
+    });
+  }, [courseId]);
 
-  if (loading) return <CircularProgress />
-  if (!course) return <Typography>Course not found</Typography>
+  const enroll = async () => {
+    if (!courseId) return;
+    await api.post(`/courses/${courseId}/enroll`);
+  };
+
+  if (!course) return null;
 
   return (
-    <Paper sx={{ p: 4, maxWidth: 800 }}>
-      <Typography variant="h4" gutterBottom>
-        {course.title}
-      </Typography>
+    <div>
+      <h1>{course.title}</h1>
+      <p>{course.description}</p>
 
-      <Typography variant="subtitle1" color="text.secondary">
-        Instructor: {course.instructor_name}
-      </Typography>
+      <button onClick={enroll}>Enroll</button>
 
-      <Typography sx={{ mt: 2 }}>
-        {course.description}
-      </Typography>
-
-      {user?.role === 'student' && (
-        <Box sx={{ mt: 4 }}>
-          <Button
-            variant="contained"
-            disabled={enrolled || enrolling}
-            onClick={handleEnroll}
-          >
-            {enrolled ? 'Enrolled' : enrolling ? 'Enrolling…' : 'Enroll'}
-          </Button>
-        </Box>
-      )}
-    </Paper>
-  )
+      <h2>Quizzes</h2>
+      {course.quizzes.map((q) => (
+        <div key={q.id}>{q.title}</div>
+      ))}
+    </div>
+  );
 }

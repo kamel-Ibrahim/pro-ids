@@ -1,14 +1,9 @@
-import api, { unwrap } from "./api";
+import api from "./api";
+import type { Quiz, QuizSubmissionPayload, QuizResult } from "../types/quiz";
+import type { ApiResponse } from "../types/api";
 
-/**
- * Get a quiz by ID
- * No Quiz type exists → return unknown
- */
-export const getQuiz = (id: number) =>
-  api.get(`/quizzes/${id}`).then(unwrap);
+export const getQuiz = (quizId: number) =>
+  api.get<ApiResponse<Quiz>>(`/quizzes/${quizId}`);
 
-/**
- * Submit quiz answers
- */
-export const submitQuiz = (id: number, payload: unknown) =>
-  api.post(`/quizzes/${id}/submit`, payload).then(unwrap);
+export const submitQuiz = (quizId: number, payload: QuizSubmissionPayload) =>
+  api.post<ApiResponse<QuizResult>>(`/quizzes/${quizId}/submit`, payload);

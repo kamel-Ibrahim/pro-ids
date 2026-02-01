@@ -1,59 +1,26 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/api";
+import type { ApiResponse } from "../../types/api";
 
-interface ProgressResponse {
-  completed_lessons: number;
-  total_lessons: number;
-  quiz_passed: boolean;
+interface Progress {
+  completed_quizzes: number;
+  total_quizzes: number;
 }
 
 export default function CourseProgress() {
-  const { courseId } = useParams();
-  const [progress, setProgress] =
-    useState<ProgressResponse | null>(null);
+  const [progress, setProgress] = useState<Progress | null>(null);
 
   useEffect(() => {
-    const fetchProgress = async () => {
-      const res = await axios.get(
-        `/api/progress/${courseId}`
-      );
-      setProgress(res.data);
-    };
-
-    fetchProgress();
-  }, [courseId]);
+    api.get<ApiResponse<Progress>>("/progress").then((res) => {
+      setProgress(res.data.data);
+    });
+  }, []);
 
   if (!progress) return null;
 
   return (
-    <div className="space-y-6">
-      <div>
-        Lessons: {progress.completed_lessons} /{" "}
-        {progress.total_lessons}
-      </div>
-
-      <div>
-        Quiz:{" "}
-        {progress.quiz_passed ? (
-          <span className="text-emerald-400">
-            Passed
-          </span>
-        ) : (
-          <span className="text-red-400">
-            Not passed
-          </span>
-        )}
-      </div>
-
-      {progress.quiz_passed && (
-        <a
-          href={`/api/certificate/${courseId}`}
-          className="inline-block px-6 py-3 rounded-xl bg-[var(--accent)] text-black font-semibold"
-        >
-          Download Certificate
-        </a>
-      )}
+    <div>
+      Progress: {progress.completed_quizzes} / {progress.total_quizzes}
     </div>
   );
 }

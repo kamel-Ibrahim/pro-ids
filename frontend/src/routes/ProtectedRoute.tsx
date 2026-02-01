@@ -1,28 +1,12 @@
-import { Navigate, Outlet } from "react-router-dom";
+import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 
-interface ProtectedRouteProps {
-  allow?: Array<"student" | "instructor">;
-}
+export default function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
 
-export default function ProtectedRoute({ allow }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black text-zinc-400">
-        Loading…
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allow && !allow.includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <Outlet />;
+  return <>{children}</>;
 }

@@ -1,22 +1,38 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import api, { unwrap } from "../../api/api";
-import type { ApiError } from "../../api/api";
+import api from "../../api/api";
+import type { ApiResponse } from "../../types/api";
+
+interface Lesson {
+  id: number;
+  title: string;
+}
 
 export default function CourseLessons() {
-  const { id } = useParams();
-  const [lessons, setLessons] = useState<unknown[]>([]);
+  const { id } = useParams<{ id: string }>();
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) return;
+
     api
-      .get(`/courses/${id}/lessons`)
-      .then(unwrap)
-      .then((data) => setLessons(Array.isArray(data) ? data : []))
-      .catch((e: ApiError) => setError(e.message));
+      .get<ApiResponse<Lesson[]>>(`/courses/${id}/lessons`)
+      .then((res) => {
+        setLessons(res.data.data);
+      })
+      .catch(() => {
+        setError("Failed to load lessons");
+      });
   }, [id]);
 
   if (error) return <p>{error}</p>;
 
-  return <pre>{JSON.stringify(lessons, null, 2)}</pre>;
+  return (
+    <div>
+      {lessons.map((l) => (
+        <div key={l.id}>{l.title}</div>
+      ))}
+    </div>
+  );
 }
