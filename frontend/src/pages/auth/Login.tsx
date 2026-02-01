@@ -1,31 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // 🔁 Redirect AFTER auth state updates
+  useEffect(() => {
+    if (!user) return;
+
+    if (user.role === "instructor") {
+      navigate("/instructor", { replace: true });
+    } else {
+      navigate("/student", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       await login(email, password);
-
-      // ✅ DO NOT READ role HERE
-      // AuthContext already has user
-      navigate("/instructor", { replace: true });
+      // ⛔ no navigate here — wait for user state
     } catch {
       setError("Invalid email or password");
-    } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -42,6 +49,7 @@ export default function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          autoComplete="email"
         />
 
         <input
@@ -50,10 +58,11 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          autoComplete="current-password"
         />
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+        <button type="submit" disabled={submitting}>
+          {submitting ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>

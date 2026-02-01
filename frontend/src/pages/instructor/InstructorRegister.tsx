@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import type { UserRole } from "../../auth/auth.types";
 
 interface RegisterForm {
   name: string;
@@ -36,13 +35,12 @@ export default function InstructorRegister() {
         form.name,
         form.email,
         form.password,
-        "instructor" as UserRole // ✅ FIX
+        "instructor"
       );
 
-      navigate("/instructor", { replace: true });
+      navigate("/login", { replace: true });
     } catch {
       setError("Instructor registration failed");
-    } finally {
       setLoading(false);
     }
   };

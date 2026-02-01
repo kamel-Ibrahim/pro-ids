@@ -50,30 +50,45 @@ export const unwrapList = <T = unknown>(
 };
 
 /* =======================
-   Axios instance
+   Axios instance (COOKIE AUTH)
 ======================= */
 const api = axios.create({
   baseURL: "/api",
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // 🔥 REQUIRED FOR LARAVEL SESSION AUTH
 });
 
+/* =======================
+   Request interceptor
+   (NO JWT!)
+======================= */
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+/* =======================
+   Response interceptor
+======================= */
 api.interceptors.response.use(
   (res) => res,
   (error: AxiosError<BackendErrorResponse>) => {
+    const status = error.response?.status ?? 0;
+    const url = error.config?.url;
+
+    // ✅ Expected case: user not logged in yet
+    if (status === 401 && url === "/me") {
+      return Promise.reject(error);
+    }
+
     const apiError: ApiError = {
-      status: error.response?.status ?? 0,
+      status,
       message:
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Something went wrong",
       fieldErrors: error.response?.data?.errors,
     };
+
     return Promise.reject(apiError);
   }
 );
