@@ -2,45 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Quiz;
-use App\Models\QuizAttempt;
+use App\Models\Course;
+use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
     public function show(Quiz $quiz)
     {
-        return $quiz->load('questions.options');
+        return response()->json(['data' => $quiz->load('questions.options')]);
     }
 
-    public function submit(Request $request, Quiz $quiz)
-    {
-        $data = $request->validate([
-            'answers' => 'required|array',
-        ]);
-
-        $score = 0;
-        $total = $quiz->questions->count();
-
-        foreach ($quiz->questions as $question) {
-            if (
-                isset($data['answers'][$question->id]) &&
-                $question->correct_option_id == $data['answers'][$question->id]
-            ) {
-                $score++;
-            }
-        }
-
-        QuizAttempt::create([
-            'user_id' => auth()->id(),
-            'quiz_id' => $quiz->id,
-            'score' => $score,
-            'total' => $total,
-        ]);
-
-        return response()->json([
-            'score' => $score,
-            'total' => $total,
-        ]);
+    // POST /api/courses/{course}/quizzes
+    public function store(Request $request, Course $course)
+{
+    // 1. Check permissions
+    if ($course->instructor_id !== $request->user()->id) {
+        return response()->json(['message' => 'Forbidden'], 403);
     }
+
+    // 2. Validate based on Spec 3.5
+    $data = $request->validate([
+        'title' => 'required|string|max:255',
+        'passing_score' => 'required|integer|min:0|max:100',
+        'time_limit' => 'nullable|integer|min:1',
+        'shuffle_questions' => 'boolean',
+    ]);
+
+    // 3. Create quiz
+    $quiz = $course->quizzes()->create($data);
+
+    return response()->json([
+        'message' => 'Quiz created',
+        'data' => $quiz
+    ], 201);
+}
 }

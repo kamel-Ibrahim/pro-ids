@@ -4,48 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Models\Lesson;
 use App\Models\Course;
-use App\Models\LessonCompletion;
 use Illuminate\Http\Request;
 
 class LessonController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Instructor: Create lesson
-    |--------------------------------------------------------------------------
-    */
-    public function store(Request $request)
+    // GET /api/courses/{course}/lessons
+    public function index(Course $course)
+    {
+        return response()->json([
+            'data' => $course->lessons()->orderBy('order')->get()
+        ]);
+    }
+
+    // POST /api/courses/{course}/lessons
+    public function store(Request $request, Course $course)
     {
         $data = $request->validate([
-            'course_id' => 'required|exists:courses,id',
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
             'video_url' => 'nullable|string',
-            'order' => 'required|integer|min:1',
+            'duration' => 'nullable|string',
+            'order' => 'nullable|integer',
         ]);
 
-        $course = Course::findOrFail($data['course_id']);
-        abort_unless($course->instructor_id === auth()->id(), 403);
+        $lesson = $course->lessons()->create($data);
 
-        $lesson = Lesson::create($data);
-
-        return response()->json($lesson, 201);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Student: Mark lesson completed
-    |--------------------------------------------------------------------------
-    */
-    public function complete(Lesson $lesson)
-    {
-        LessonCompletion::firstOrCreate([
-            'user_id' => auth()->id(),
-            'lesson_id' => $lesson->id,
-        ]);
-
-        return response()->json([
-            'message' => 'Lesson completed',
-        ]);
+        return response()->json(['data' => $lesson], 201);
     }
 }

@@ -44,9 +44,8 @@ export default function Sidebar() {
               `
               block px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
               ${
-                isActive
-                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]"
-                  : "text-zinc-400 hover:bg-white/5 hover:text-white"
+                // Inside Sidebar.tsx NavLink class logic
+              isActive ? "bg-cyan-500/10 text-cyan-400 border-l-4 border-cyan-400" : "text-zinc-500 hover:text-white"
               }
             `
             }

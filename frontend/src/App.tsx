@@ -19,7 +19,7 @@ import CreateCourse from "./pages/instructor/CreateCourse";
 import InstructorCourseLessons from "./pages/instructor/CourseLessons";
 import CourseQuizBuilder from "./pages/instructor/CourseQuizBuilder";
 import CourseAnalytics from "./pages/instructor/CourseAnalytics";
-import InstructorCourses from "./pages/instructor/MyCourses"; // Add this import
+import InstructorCourses from "./pages/instructor/MyCourses";
 
 /* ================= PUBLIC COURSES ================= */
 import CourseCatalog from "./pages/courses/CourseCatalog";
@@ -33,7 +33,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
 
       <Route path="/" element={<CourseCatalog />} />
-      <Route path="/courses/:id" element={<CourseDetails />} />
+      <Route path="/courses/:courseId" element={<CourseDetails />} />
 
       {/* ================= AUTHENTICATED ================= */}
       <Route element={<ProtectedRoute />}>
@@ -43,47 +43,19 @@ export default function App() {
           <Route element={<ProtectedRoute allow={["student"]} />}>
             <Route path="/student" element={<StudentDashboard />} />
             <Route path="/student/courses" element={<MyCourses />} />
-
-            <Route
-              path="/courses/:courseId/lessons"
-              element={<StudentCourseLessons />}
-            />
-
-            <Route
-              path="/courses/:courseId/quiz"
-              element={<CourseQuiz />}
-            />
-
-            <Route
-              path="/courses/:courseId/certificate"
-              element={<Certificate />}
-            />
+            <Route path="/courses/:courseId/lessons" element={<StudentCourseLessons />} />
+            <Route path="/courses/:courseId/quiz" element={<CourseQuiz />} />
+            <Route path="/courses/:courseId/certificate" element={<Certificate />} />
           </Route>
 
           {/* -------- INSTRUCTOR ONLY -------- */}
           <Route element={<ProtectedRoute allow={["instructor"]} />}>
             <Route path="/instructor" element={<InstructorDashboard />} />
             <Route path="/instructor/courses" element={<InstructorCourses />} />
-
-            <Route
-              path="/instructor/courses/new"
-              element={<CreateCourse />}
-            />
-
-            <Route
-              path="/instructor/courses/:courseId/lessons"
-              element={<InstructorCourseLessons />}
-            />
-
-            <Route
-              path="/instructor/courses/:courseId/quiz"
-              element={<CourseQuizBuilder />}
-            />
-
-            <Route
-              path="/instructor/courses/:courseId/analytics"
-              element={<CourseAnalytics />}
-            />
+            <Route path="/instructor/courses/new" element={<CreateCourse />} />
+            <Route path="/instructor/courses/:courseId/lessons" element={<InstructorCourseLessons />} />
+            <Route path="/instructor/courses/:courseId/quiz" element={<CourseQuizBuilder />} />
+            <Route path="/instructor/courses/:courseId/analytics" element={<CourseAnalytics />} />
           </Route>
 
         </Route>
