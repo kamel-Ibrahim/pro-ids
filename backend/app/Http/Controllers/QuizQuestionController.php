@@ -5,30 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class QuizQuestionController extends Controller
 {
-    public function store(Request $request, $quizId)
+    public function store(Request $request, Quiz $quiz)
     {
-        $quiz = Quiz::with('course')->findOrFail($quizId);
-        $user = Auth::user();
+        // 1. Validation
+        $data = $request->validate([
+            'text' => 'required|string',
+            'type' => 'required|in:MCQ,TF,MSQ',
+            'options' => 'required|array|min:2',
+            'options.*.text' => 'required|string',
+            'options.*.is_correct' => 'required|boolean',
+        ]);
 
-        if ($quiz->course->instructor_id !== $user->id) {
-            abort(403);
+        // 2. Create the question
+        $question = $quiz->questions()->create([
+            'text' => $data['text'],
+            'multiple' => $data['type'] === 'MSQ'
+        ]);
+
+        // 3. Create the options - Map 'text' from frontend to 'option_text' in DB
+        foreach ($data['options'] as $opt) {
+            $question->options()->create([
+                'option_text' => $opt['text'], 
+                'is_correct' => $opt['is_correct']
+            ]);
         }
 
-        $data = $request->validate([
-            'text' => ['required', 'string'],
-            'multiple' => ['required', 'boolean'],
-        ]);
-
-        $question = QuizQuestion::create([
-            'quiz_id' => $quiz->id,
-            'text' => $data['text'],
-            'multiple' => $data['multiple'],
-        ]);
-
-        return response()->json($question, 201);
+        return response()->json(['message' => 'Question saved successfully'], 201);
     }
 }

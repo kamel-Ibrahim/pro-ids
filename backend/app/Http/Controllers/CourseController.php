@@ -3,25 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use Illuminate\Http\Request; // THIS WAS MISSING
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class CourseController extends Controller
 {
     public function index()
     {
-        // Direct array return for simplicity in frontend
         return Course::with('instructor')->latest()->get();
     }
 
+    // FIX: Explicitly load relationships so the "Manage" page has data
     public function show(Course $course)
     {
-        return $course->load('quizzes.questions.options');
+        return response()->json([
+            'data' => $course->load(['lessons', 'quizzes'])
+        ]);
     }
 
     public function store(Request $request)
     {
-        // 1. Validation based on PDF Spec 3.3
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'short_description' => 'required|string',
@@ -29,21 +29,11 @@ class CourseController extends Controller
             'category' => 'required|string',
             'difficulty' => 'required|in:Beginner,Intermediate,Advanced',
             'estimated_duration' => 'required|string',
-            'thumbnail' => 'nullable|string', // PDF Spec asks for thumbnail
         ]);
 
-        // 2. Ensure only instructors can do this
-        if ($request->user()->role !== 'instructor') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        // 3. Create the course using the relationship
-        // This automatically sets the instructor_id
+        // Ensure your User model has the taughtCourses() relationship defined
         $course = $request->user()->taughtCourses()->create($data);
 
-        return response()->json([
-            'message' => 'Course created successfully',
-            'data' => $course
-        ], 201);
+        return response()->json(['data' => $course], 201);
     }
 }

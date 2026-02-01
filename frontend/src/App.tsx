@@ -20,6 +20,8 @@ import InstructorCourseLessons from "./pages/instructor/CourseLessons";
 import CourseQuizBuilder from "./pages/instructor/CourseQuizBuilder";
 import CourseAnalytics from "./pages/instructor/CourseAnalytics";
 import InstructorCourses from "./pages/instructor/MyCourses";
+import QuizQuestionBuilder from "./pages/instructor/QuizQuestionBuilder";
+import InstructorCourseManage from "./pages/instructor/InstructorCourseManage"
 
 /* ================= PUBLIC COURSES ================= */
 import CourseCatalog from "./pages/courses/CourseCatalog";
@@ -55,7 +57,9 @@ export default function App() {
             <Route path="/instructor/courses/new" element={<CreateCourse />} />
             <Route path="/instructor/courses/:courseId/lessons" element={<InstructorCourseLessons />} />
             <Route path="/instructor/courses/:courseId/quiz" element={<CourseQuizBuilder />} />
+            <Route path="/instructor/quizzes/:quizId/questions" element={<QuizQuestionBuilder />} />
             <Route path="/instructor/courses/:courseId/analytics" element={<CourseAnalytics />} />
+            <Route path="/instructor/courses/:courseId/manage" element={<InstructorCourseManage />} />
           </Route>
 
         </Route>

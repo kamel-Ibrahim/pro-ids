@@ -27,10 +27,10 @@ export default function CourseQuizBuilder() {
     };
 
     try {
-      await api.post(`/courses/${courseId}/quizzes`, payload);
-      alert("Quiz basic settings saved!");
-      navigate('/instructor');
-    } catch (err: unknown) {
+  const res = await api.post(`/courses/${courseId}/quizzes`, payload);
+  const newQuizId = res.data.data.id; // Get the ID of the quiz just created
+  navigate(`/instructor/quizzes/${newQuizId}/questions`); // Go to Question Builder
+} catch (err: unknown) {
       // 1. Check if the error is an Axios error
       if (axios.isAxiosError(err)) {
         const message = err.response?.data?.message || "Error saving quiz.";
