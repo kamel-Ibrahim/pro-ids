@@ -11,13 +11,15 @@ class Course extends Model
 
     protected $fillable = [
         'title',
-        'short_description', // ADDED
+        'short_description',
         'description',
-        'category',          // ADDED
-        'difficulty',        // ADDED
-        'estimated_duration',// ADDED
-        'thumbnail',         // ADDED
+        'category',
+        'difficulty',
+        'estimated_duration',
+        'thumbnail',
         'instructor_id',
+        'is_approved', // ADDED THIS
+        'published',   // ADDED THIS
     ];
 
     public function instructor()

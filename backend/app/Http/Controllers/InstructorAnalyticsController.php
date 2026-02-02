@@ -11,9 +11,9 @@ class InstructorAnalyticsController extends Controller
 {
     public function index()
     {
-        $instructor = Auth::user();
+        $instructor = Auth::guard('api')->user();
 
-        // FIX: Changed 'created_by' to 'instructor_id' to match your migration
+        // Enforce visibility: Only courses owned by this instructor
         $courses = Course::where('instructor_id', $instructor->id)->pluck('id');
 
         $totalEnrollments = DB::table('enrollments')

@@ -9,21 +9,19 @@ use App\Models\QuizAttempt;
 
 class InstructorDashboardController extends Controller
 {
-    /**
-     * Instructor dashboard summary
-     */
     public function index()
     {
         $user = Auth::guard('api')->user();
 
-        if ($user->role !== 'instructor') {
+        if (!$user || $user->role !== 'instructor') {
             return response()->json([
                 'success' => false,
                 'message' => 'Only instructors can access this dashboard'
             ], 403);
         }
 
-        $courseIds = Course::where('created_by', $user->id)->pluck('id');
+        // Fixed: Use instructor_id column
+        $courseIds = Course::where('instructor_id', $user->id)->pluck('id');
 
         $coursesCount = $courseIds->count();
 
@@ -31,7 +29,6 @@ class InstructorDashboardController extends Controller
             ->distinct('user_id')
             ->count('user_id');
 
-        // Best score per quiz across instructor courses
         $averageScore = QuizAttempt::whereIn('quiz_id', function ($q) use ($courseIds) {
                 $q->select('id')->from('quizzes')->whereIn('course_id', $courseIds);
             })

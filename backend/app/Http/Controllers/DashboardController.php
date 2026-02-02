@@ -12,11 +12,11 @@ class DashboardController extends Controller
     public function index()
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
 
         if (!$user) return response()->json(['message' => 'Unauthenticated'], 401);
 
-        // INSTRUCTOR: Only see courses THEY made
+        // INSTRUCTOR: Only see stats/courses they created
         if ($user->role === 'instructor') {
             return response()->json([
                 'courses' => Course::where('instructor_id', $user->id)
@@ -25,7 +25,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        // STUDENT: See enrolled courses with progress
+        // STUDENT: See courses they are enrolled in (regardless of instructor)
         $enrollments = $user->enrollments()
             ->with('course.lessons')
             ->get()
