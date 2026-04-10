@@ -25,7 +25,7 @@ export default function InstructorLayout() {
 
       {/* MAIN */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* ✅ TOPBAR WITH REQUIRED PROP */}
+        {/* TOPBAR WITH REQUIRED PROP */}
         <Topbar title="Instructor Dashboard" />
 
         <main
